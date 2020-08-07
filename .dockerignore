@@ -1,0 +1,4 @@
+*.cabal
+.env*
+.git
+.stack-work
