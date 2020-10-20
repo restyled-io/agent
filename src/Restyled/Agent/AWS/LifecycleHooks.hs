@@ -51,7 +51,7 @@ instance FromJSON LifecycleHookDetails where
         <*> o .: "LifecycleActionToken"
 
 withPendingLifecycleHook
-    :: ( MonadIO m
+    :: ( MonadUnliftIO m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env
@@ -62,7 +62,7 @@ withPendingLifecycleHook
 withPendingLifecycleHook = withLifecycleHook InstanceLaunching
 
 withTerminatingLifecycleHook
-    :: ( MonadIO m
+    :: ( MonadUnliftIO m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env
@@ -73,7 +73,7 @@ withTerminatingLifecycleHook
 withTerminatingLifecycleHook = withLifecycleHook InstanceTerminating
 
 withLifecycleHook
-    :: ( MonadIO m
+    :: ( MonadUnliftIO m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env

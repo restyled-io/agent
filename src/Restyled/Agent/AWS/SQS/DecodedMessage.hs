@@ -23,7 +23,7 @@ data DecodedMessage a = DecodedMessage
     }
 
 awaitDecodedMessage
-    :: ( MonadIO m
+    :: ( MonadUnliftIO m
        , MonadReader env m
        , HasLogFunc env
        , HasAWS env
@@ -33,7 +33,7 @@ awaitDecodedMessage
     => Text
     -> (a -> Bool)
     -> m (DecodedMessage a)
-awaitDecodedMessage queueUrl predicate = untilJustM $ do
+awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
     emDecodedMessage <- receiveDecodedMessage queueUrl
 
     case emDecodedMessage of
@@ -47,6 +47,9 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ do
             logDebug $ "Message was not expected: " <> displayShow
                 (dmBody decodedMessage)
             pure Nothing
+  where
+    onErr ex =
+        Nothing <$ logError ("Exception awaiting SQS Message: " <> display ex)
 
 receiveDecodedMessage
     :: (MonadIO m, MonadReader env m, HasLogFunc env, HasAWS env, FromJSON a)
