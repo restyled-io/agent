@@ -5,7 +5,7 @@ RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
     ca-certificates=20190110~18.04.1 \
-    curl=7.58.0-2ubuntu3.9 \
+    curl=7.58.0-2ubuntu3.10 \
     gcc=4:7.4.0-1ubuntu2.3 \
     locales=2.27-3ubuntu1.2 \
     netbase=5.4 && \
@@ -17,7 +17,7 @@ WORKDIR /src
 COPY stack.yaml package.yaml /src/
 RUN stack install --dependencies-only
 COPY src /src/src
-COPY agent /src/agent
+COPY app /src/app
 RUN stack install
 
 # Docker client
