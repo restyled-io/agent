@@ -1,0 +1,104 @@
+#!/bin/bash
+set -euo pipefail
+
+ec2metadata() {
+  local base=http://169.254.169.254/latest token
+  token=$(curl -X PUT -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" "$base/api/token")
+
+  if [[ -z "$token" ]]; then
+    echo "Unable to get EC2 Metadata Token" >&2
+    exit 1
+  fi
+
+  curl -H "X-aws-ec2-metadata-token: $token" "$base/meta-data/$1"
+}
+
+get_ssm_parameter_value() {
+  aws \
+    --region "$REGION" ssm get-parameter \
+    --name "/restyled/$ENV/$1" |
+    jq --raw-output '.Parameter.Value'
+}
+
+host=$(ec2metadata public-hostname)
+
+if [[ -z "$host" ]]; then
+  echo "Unable to get public-hostname" >&2
+  exit 1
+fi
+
+instance_id=$(ec2metadata instance-id)
+
+if [[ -z "$instance_id" ]]; then
+  echo "Unable to get instance-id" >&2
+  exit 1
+fi
+
+restyled_api_token=$(get_ssm_parameter_value restyled-api-token)
+
+if [[ -z "$restyled_api_token" ]]; then
+  echo "Unable to get restyled-api-token" >&2
+  exit 1
+fi
+
+echo "Generating TLS certificates"
+mkdir -p certs
+docker run --rm \
+  --volume "$PWD"/certs:/certs \
+  restyled/init-certificates -H "$host" -o /certs
+
+echo "Reconfiguring Docker daemon for TLS"
+sudo mkdir -p /etc/docker/ssl
+sudo cp certs/{ca,server_cert,server_key}.pem /etc/docker/ssl/
+options="--tlsverify"
+options+=" --tlscacert=/etc/docker/ssl/ca.pem"
+options+=" --tlscert=/etc/docker/ssl/server_cert.pem"
+options+=" --tlskey=/etc/docker/ssl/server_key.pem"
+options+=" -H tcp://0.0.0.0:2376"
+sudo sed -i 's%^\(OPTIONS="[^"]*\)"$%\1 '"$options"'"%' /etc/sysconfig/docker
+
+echo "Restarting Docker daemon"
+sudo systemctl restart docker
+
+echo "Testing Docker connection"
+mkdir -p client-certs
+sudo cp /certs/ca.pem client-certs/ca.pem
+sudo cp /certs/client_cert.pem client-certs/cert.pem
+sudo cp /certs/client_key.pem client-certs/key.pem
+sudo chown -R ec2-user:ec2-user client-certs/
+env \
+  DOCKER_TLS_VERIFY=1 \
+  DOCKER_HOST="tcp://$host:2376" \
+  DOCKER_CERT_PATH="$PWD/client-certs" \
+  docker version
+
+echo "Adding daily prune script"
+sudo tee /etc/cron.daily/prune <<'EOM'
+#!/bin/sh
+set -x
+
+find /tmp -maxdepth 1 \
+  -type d -name 'restyler-*' \
+  -cmin +$((12 * 60)) \
+  -exec rm -r {} +
+
+docker system prune --all --force
+EOM
+sudo chmod +x /etc/cron.daily/prune
+
+echo "Starting build agent"
+docker run \
+  --detach \
+  --name restyled-agent \
+  --log-driver=awslogs \
+  --log-opt "awslogs-region=$REGION" \
+  --log-opt "awslogs-group=$LOG_GROUP" \
+  --volume "$PWD"/client-certs:/certs \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  "@AGENT_IMAGE@" \
+  --host "$host" \
+  --instance "$instance_id" \
+  --restyled-host "https://restyled.io" \
+  --restyled-token "$restyled_api_token" \
+  --env "$ENV" \
+  --sqs-queue-url "$LIFECYCLE_HOOKS_URL"
