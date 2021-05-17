@@ -54,7 +54,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     outputs:
-      image: ${{ steps.image.outputs.image }}
+      image: ${{ steps.prep.outputs.image }}
 
   user-data:
     needs: [image]
