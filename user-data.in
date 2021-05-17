@@ -95,7 +95,7 @@ docker run \
   --log-opt "awslogs-group=$LOG_GROUP" \
   --volume "$PWD"/client-certs:/certs \
   --volume /var/run/docker.sock:/var/run/docker.sock \
-  "@AGENT_IMAGE@" \
+  @AGENT_IMAGE@ \
   --host "$host" \
   --instance "$instance_id" \
   --restyled-host "https://restyled.io" \
