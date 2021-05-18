@@ -71,7 +71,7 @@ jobs:
         run: |
           agent_image=${{ needs.image.outputs.image }}
           key=src/restyle-machines/user-data/${{ github.sha }}
-          m4 -D @AGENT_IMAGE@="$agent_image" < user-data.in |
+          m4 -D AGENT_IMAGE="$agent_image" < user-data.in |
             aws s3 cp --acl public-read - "s3://infra.restyled.io/$key"
           echo "::set-output name=key::$key"
 
