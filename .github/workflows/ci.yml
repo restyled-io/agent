@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: freckle/stack-cache-action@main
+      - uses: freckle/stack-action@main
+        with:
+          weeder: false
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - id: prep
+        run: |
+          image=restyled/agent:$(echo "${{ github.sha }}" | head -c7)
+          echo "::set-output name=image::${image}"
+
+      - id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-image-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-image-
+
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          build-args: |
+            REVISION=${{ github.sha }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          push: true
+          tags: ${{ steps.prep.outputs.image }}
+
+      # Avoids ever-growing cache hitting limits
+      - run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+    outputs:
+      image: ${{ steps.prep.outputs.image }}
+
+  user-data:
+    needs: [image]
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
+
+    steps:
+      - uses: actions/checkout@v2
+      - id: artifact
+        run: |
+          agent_image=${{ needs.image.outputs.image }}
+          key=src/restyle-machines/user-data/${{ github.sha }}
+          m4 -D AGENT_IMAGE="$agent_image" < user-data.in |
+            aws s3 cp --acl public-read - "s3://infra.restyled.io/$key"
+          echo "::set-output name=key::$key"
+
+    outputs:
+      key: ${{ steps.artifact.outputs.key }}
+
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: [test, image, user-data]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: restyled-io/gitops-deploy-action@main
+        with:
+          token: ${{ secrets.GITOPS_ACCESS_TOKEN }}
+          parameter-name: UserDataSourceKey
+          parameter-value: ${{ needs.user-data.outputs.key }}
+          committer-name: Restyled Commits
+          committer-email: commits@restyled.io
+          repository: restyled-io/ops
+          stacks: cg-app/stacks/*/*/prod/services/restyle-machines.yaml

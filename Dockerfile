@@ -4,11 +4,11 @@ ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8 LC_ALL=C.UTF-8
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    ca-certificates=20190110~18.04.1 \
-    curl=7.58.0-2ubuntu3.10 \
-    gcc=4:7.4.0-1ubuntu2.3 \
-    locales=2.27-3ubuntu1.2 \
-    netbase=5.4 && \
+    ca-certificates \
+    curl \
+    gcc \
+    locales \
+    netbase && \
   locale-gen en_US.UTF-8 && \
   rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /src
@@ -33,9 +33,9 @@ ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8 LC_ALL=C.UTF-8
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    ca-certificates=20190110~18.04.1 \
-    locales=2.27-3ubuntu1.2 \
-    netbase=5.4 && \
+    ca-certificates \
+    locales \
+    netbase && \
   locale-gen en_US.UTF-8 && \
   rm -rf /var/lib/apt/lists/*
 
