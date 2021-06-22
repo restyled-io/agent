@@ -41,6 +41,19 @@ if [[ -z "$restyled_api_token" ]]; then
   exit 1
 fi
 
+if [[ -n "${DD_API_KEY:-""}" ]]; then
+  echo "Starting Datadog agent"
+  docker run \
+    --detach \
+    --name dd-agent \
+    --volume /proc/:/host/proc/:ro \
+    --volume /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+    --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+    --env DD_API_KEY \
+    --env DD_SITE \
+    "gcr.io/datadoghq/agent:$DD_AGENT_MAJOR_VERSION"
+fi
+
 echo "Generating TLS certificates"
 mkdir -p certs
 docker run --rm \
