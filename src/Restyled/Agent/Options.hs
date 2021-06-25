@@ -20,6 +20,8 @@ data Options = Options
     , oQueueUrl :: Text
     , oDebug :: Bool
     , oTrace :: Bool
+    , oStatsdHost :: String
+    , oStatsdPort :: Int
     }
     deriving stock Show
 
@@ -73,6 +75,16 @@ options = Options
     <*> switch
         (  long "trace"
         <> help "Also log AWS DEBUG messages"
+        )
+    <*> option str
+        (  long "statsd-host"
+        <> help "Statsd Host"
+        <> value "localhost"
+        )
+    <*> option auto
+        (  long "statsd-port"
+        <> help "Statsd Port"
+        <> value 8125
         )
 
 parse :: Parser a -> String -> ParserInfo a

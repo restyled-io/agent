@@ -1,6 +1,6 @@
 module Restyled.Agent.App
     ( App
-    , loadApp
+    , withApp
     )
 where
 
@@ -9,6 +9,7 @@ import RIO
 import qualified Network.AWS as AWS
 import Restyled.Agent.AWS
 import Restyled.Agent.Options
+import Restyled.Agent.Statsd
 import RIO.Process
 
 data App = App
@@ -16,6 +17,7 @@ data App = App
     , appLogFunc :: LogFunc
     , appProcessContext :: ProcessContext
     , appAWS :: AWS.Env
+    , appStatsClient :: StatsClient
     }
 
 instance HasOptions App where
@@ -31,6 +33,19 @@ instance HasProcessContext App where
 instance HasAWS App where
     awsEnvL = lens appAWS $ \x y -> x { appAWS = y }
 
-loadApp :: Options -> LogFunc -> IO App
-loadApp opts@Options {..} lf =
-    App opts lf <$> mkDefaultProcessContext <*> discoverAWS oTrace
+instance HasStatsClient App where
+    statsClientL = lens appStatsClient $ \x y -> x { appStatsClient = y }
+
+withApp :: Options -> RIO App a -> IO a
+withApp opts@Options {..} action = do
+    logOptions <- logOptionsHandle stdout (oDebug || oTrace)
+    withStatsClient oStatsdHost oStatsdPort $ \sc -> do
+        withLogFunc logOptions $ \lf -> do
+            app <- loadApp opts lf sc
+            runRIO app $ do
+                logDebug $ "Options: " <> displayShow opts
+                action
+
+loadApp :: Options -> LogFunc -> StatsClient -> IO App
+loadApp opts@Options {..} lf sc =
+    App opts lf <$> mkDefaultProcessContext <*> discoverAWS oTrace <*> pure sc

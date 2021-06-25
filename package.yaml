@@ -42,6 +42,7 @@ library:
     - amazonka-ecs
     - amazonka-sqs
     - bytestring
+    - datadog
     - http-conduit
     - http-types
     - lens

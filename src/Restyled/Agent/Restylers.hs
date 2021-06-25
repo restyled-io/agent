@@ -7,6 +7,8 @@ import RIO
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BSL8
+import Restyled.Agent.Statsd (HasStatsClient)
+import qualified Restyled.Agent.Statsd as Statsd
 import RIO.Process
 
 data Restyler = Restyler
@@ -28,6 +30,7 @@ awaitRestylers
        , MonadReader env m
        , HasLogFunc env
        , HasProcessContext env
+       , HasStatsClient env
        )
     => m ()
 awaitRestylers = race_
@@ -40,6 +43,7 @@ awaitRestylers = race_
     (do
         threadDelay $ restylersTimeoutSeconds * 1000000
         logWarn "Timeout reached"
+        Statsd.increment "agent.drain.timeout" []
     )
 
 getRestylers

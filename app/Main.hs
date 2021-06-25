@@ -5,23 +5,23 @@ where
 
 import RIO
 
+import Restyled.Agent.App
 import Restyled.Agent.AWS
 import Restyled.Agent.AWS.LifecycleHooks
-import Restyled.Agent.App
 import Restyled.Agent.Options
 import Restyled.Agent.RestyleMachine
 import Restyled.Agent.Restylers
+import Restyled.Agent.Statsd (HasStatsClient)
+import qualified Restyled.Agent.Statsd as Statsd
 import RIO.Process
 
 main :: IO ()
 main = do
-    opts@Options {..} <- parseOptions
-    logOptions <- logOptionsHandle stdout (oDebug || oTrace)
-    withLogFunc logOptions $ \lf -> do
-        app <- loadApp opts lf
-        runRIO app $ do
-            logDebug $ "Options: " <> displayShow opts
-            initializeOnPending >>= awaitTermination
+    options <- parseOptions
+    withApp options $ do
+        Statsd.increment "agent.booted" []
+        initializeOnPending >>= awaitTermination
+        Statsd.increment "agent.terminated" []
 
 initializeOnPending
     :: ( MonadUnliftIO m
@@ -32,6 +32,7 @@ initializeOnPending
        , HasOptions env
        , HasAWS env
        , HasProcessContext env
+       , HasStatsClient env
        )
     => m RestyleMachine
 initializeOnPending = withPendingLifecycleHook $ do
@@ -39,7 +40,9 @@ initializeOnPending = withPendingLifecycleHook $ do
     logInfo $ "Created machine: " <> display machine
 
     if restyleMachineEnabled machine
-        then pure (ActionResultContinue, machine)
+        then do
+            Statsd.increment "agent.registered" []
+            pure (ActionResultContinue, machine)
         else do
             logWarn "Created Machine was not enabled"
             pure (ActionResultAbandon, machine)
@@ -53,6 +56,7 @@ awaitTermination
        , HasOptions env
        , HasAWS env
        , HasProcessContext env
+       , HasStatsClient env
        )
     => RestyleMachine
     -> m ()
