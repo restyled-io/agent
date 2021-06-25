@@ -120,4 +120,5 @@ docker run \
   --restyled-host "https://restyled.io" \
   --restyled-token "$restyled_api_token" \
   --env "$ENV" \
-  --sqs-queue-url "$LIFECYCLE_HOOKS_URL"
+  --sqs-queue-url "$LIFECYCLE_HOOKS_URL" \
+  --statsd-host dd-agent
