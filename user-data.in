@@ -86,9 +86,13 @@ docker system prune --all --force
 EOM
 sudo chmod +x /etc/cron.daily/prune
 
+echo "Creating user-bridge Docker network"
+docker network create user-bridge
+
 if [[ -n "${DD_API_KEY:-""}" ]]; then
   echo "Starting Datadog agent"
   docker run \
+    --net user-bridge \
     --detach \
     --name dd-agent \
     --volume /proc/:/host/proc/:ro \
@@ -96,11 +100,13 @@ if [[ -n "${DD_API_KEY:-""}" ]]; then
     --volume /var/run/docker.sock:/var/run/docker.sock:ro \
     --env DD_API_KEY \
     --env DD_SITE \
+    --env DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1 \
     "gcr.io/datadoghq/agent:$DD_AGENT_MAJOR_VERSION"
 fi
 
 echo "Starting build agent"
 docker run \
+  --net user-bridge \
   --detach \
   --name restyled-agent \
   --log-driver=awslogs \
