@@ -42,15 +42,29 @@ library:
     - amazonka-ecs
     - amazonka-sqs
     - bytestring
+    - composition-extra
+    - conduit
+    - conduit-extra
     - datadog
+    - github
+    - hedis
     - http-conduit
     - http-types
     - lens
     - lens-aeson
     - load-env
     - optparse-applicative
+    - monad-validate
     - parsec
     - random
+    - resource-pool
+
+    # For GitHub extension modules
+    - jwt
+    - tagged
+    - text
+    - time
+    - unliftio
 
 executables:
   agent:
