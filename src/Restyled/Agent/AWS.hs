@@ -2,8 +2,7 @@ module Restyled.Agent.AWS
     ( HasAWS(..)
     , runAWS
     , discoverAWS
-    )
-where
+    ) where
 
 import RIO
 

@@ -57,8 +57,8 @@ withPendingLifecycleHook
        , HasLogFunc env
        , HasAWS env
        )
-    => m (LifecycleHookActionResult, a)
-    -> m a
+    => m a
+    -> m (Maybe a)
 withPendingLifecycleHook = withLifecycleHook InstanceLaunching
 
 withTerminatingLifecycleHook
@@ -68,8 +68,8 @@ withTerminatingLifecycleHook
        , HasLogFunc env
        , HasAWS env
        )
-    => m (LifecycleHookActionResult, a)
-    -> m a
+    => m a
+    -> m (Maybe a)
 withTerminatingLifecycleHook = withLifecycleHook InstanceTerminating
 
 withLifecycleHook
@@ -80,20 +80,44 @@ withLifecycleHook
        , HasAWS env
        )
     => LifecycleTransition
-    -> m (LifecycleHookActionResult, a)
     -> m a
+    -> m (Maybe a)
 withLifecycleHook transition act = do
     Options {..} <- view optionsL
-    logInfo
-        $ "Awaiting "
-        <> display transition
-        <> " hook for "
-        <> display oInstance
-    decodedMessage <- awaitDecodedMessage oQueueUrl $ predicate oInstance
-    (action, result) <- act
-    completeLifecycleAction (dmBody decodedMessage) action
-    deleteDecodedMessage decodedMessage
-    pure result
+
+    case (,) <$> oInstance <*> oLifecycleQueueUrl of
+        Nothing -> do
+            logInfo
+                $ "No Lifecycle hooks configured, executing "
+                <> display transition
+                <> " immediately"
+            Just <$> act
+        Just (inst, queue) -> do
+            logInfo
+                $ "Awaiting "
+                <> display transition
+                <> " hook for "
+                <> display inst
+                <> " on "
+                <> display queue
+            decodedMessage <- awaitDecodedMessage queue $ predicate inst
+
+            let
+                finalize action = do
+                    completeLifecycleAction (dmBody decodedMessage) action
+                    deleteDecodedMessage decodedMessage
+
+            eResult <- tryAny act
+
+            case eResult of
+                Left ex -> do
+                    logError
+                        $ "Error acting on "
+                        <> display transition
+                        <> " Lifecycle hook: "
+                        <> displayShow ex
+                    Nothing <$ finalize ActionResultAbandon
+                Right result -> Just result <$ finalize ActionResultContinue
   where
     predicate instanceId LifecycleHookDetails {..} =
         lhdTransition == transition && lhdInstanceId == instanceId
