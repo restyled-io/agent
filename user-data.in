@@ -16,8 +16,9 @@ ec2metadata() {
 get_ssm_parameter_value() {
   aws \
     --region "$REGION" ssm get-parameter \
-    --name "/restyled/$ENV/$1" |
-    jq --raw-output '.Parameter.Value'
+    --name "/restyled/$ENV/$1" \
+    --query 'Parameter.Value' \
+    --output text
 }
 
 host=$(ec2metadata public-hostname)
@@ -34,10 +35,31 @@ if [[ -z "$instance_id" ]]; then
   exit 1
 fi
 
+github_app_id=$(get_ssm_parameter_value github-app-id)
+
+if [[ -z "$github_app_id" ]]; then
+  echo "Unable to get github-app-id" >&2
+  exit 1
+fi
+
+github_app_key=$(get_ssm_parameter_value github-app-key)
+
+if [[ -z "$github_app_key" ]]; then
+  echo "Unable to get github-app-key" >&2
+  exit 1
+fi
+
 restyled_api_token=$(get_ssm_parameter_value restyled-api-token)
 
 if [[ -z "$restyled_api_token" ]]; then
   echo "Unable to get restyled-api-token" >&2
+  exit 1
+fi
+
+redis_url=$(get_ssm_parameter_value redis-url)
+
+if [[ -z "$redis_url" ]]; then
+  echo "Unable to get redis-url" >&2
   exit 1
 fi
 
@@ -120,10 +142,12 @@ docker run \
   --volume "$PWD"/client-certs:/certs \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   AGENT_IMAGE \
-  --host "$host" \
-  --instance "$instance_id" \
+  --github-app-id "$github_app_id" \
+  --github-app-key "$github_app_key" \
   --restyled-host "https://restyled.io" \
   --restyled-token "$restyled_api_token" \
-  --env "$ENV" \
-  --sqs-queue-url "$LIFECYCLE_HOOKS_URL" \
-  --statsd-host dd-agent
+  --instance "$instance_id" \
+  --lifecycle-queue-url "$LIFECYCLE_HOOKS_URL" \
+  --net user-bridge \
+  --statsd-host dd-agent \
+  --redis-url "$redis_url"

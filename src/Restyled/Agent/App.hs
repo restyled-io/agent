@@ -9,7 +9,8 @@ import RIO
 import qualified Network.AWS as AWS
 import Restyled.Agent.AWS
 import Restyled.Agent.Options
-import Restyled.Agent.Statsd
+import Restyled.Agent.Redis (HasRedis(..))
+import qualified Restyled.Agent.Redis as Redis
 import RIO.Process
 
 data App = App
@@ -17,7 +18,7 @@ data App = App
     , appLogFunc :: LogFunc
     , appProcessContext :: ProcessContext
     , appAWS :: AWS.Env
-    , appStatsClient :: StatsClient
+    , appRedisConn :: Redis.Connection
     }
 
 instance HasOptions App where
@@ -33,19 +34,21 @@ instance HasProcessContext App where
 instance HasAWS App where
     awsEnvL = lens appAWS $ \x y -> x { appAWS = y }
 
-instance HasStatsClient App where
-    statsClientL = lens appStatsClient $ \x y -> x { appStatsClient = y }
+instance HasRedis App where
+    redisConnectionL = lens appRedisConn $ \x y -> x { appRedisConn = y }
 
 withApp :: Options -> RIO App a -> IO a
 withApp opts@Options {..} action = do
     logOptions <- logOptionsHandle stdout (oDebug || oTrace)
-    withStatsClient oStatsdHost oStatsdPort $ \sc -> do
-        withLogFunc logOptions $ \lf -> do
-            app <- loadApp opts lf sc
-            runRIO app $ do
-                logDebug $ "Options: " <> displayShow opts
-                action
+    withLogFunc logOptions $ \lf -> do
+        app <- loadApp opts lf
+        runRIO app $ do
+            logDebug $ "Options: " <> displayShow opts
+            action
 
-loadApp :: Options -> LogFunc -> StatsClient -> IO App
-loadApp opts@Options {..} lf sc =
-    App opts lf <$> mkDefaultProcessContext <*> discoverAWS oTrace <*> pure sc
+loadApp :: Options -> LogFunc -> IO App
+loadApp opts@Options {..} lf =
+    App opts lf
+        <$> mkDefaultProcessContext
+        <*> discoverAWS oTrace
+        <*> Redis.checkedConnect oRedisConnectInfo

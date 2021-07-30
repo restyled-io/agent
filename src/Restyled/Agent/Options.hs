@@ -8,20 +8,27 @@ where
 import RIO
 
 import Options.Applicative
+import qualified Restyled.Agent.GitHub as GitHub
+import qualified Restyled.Agent.Redis as Redis
 
 data Options = Options
-    { oName :: Maybe Text
-    , oHost :: Text
-    , oInstance :: Text
-    , oCerts :: FilePath
+    { oGitHubAppId :: GitHub.Id GitHub.App
+    , oGitHubAppKey :: GitHub.AppKey
     , oRestyledHost :: Text
     , oRestyledToken :: Text
-    , oEnvironment :: Text
-    , oQueueUrl :: Text
+    , oInstance :: Maybe Text
+    , oLifecycleQueueUrl :: Maybe Text
+    , oTerminationDelay :: Natural
+    , oMonitorInterval :: Natural
+    , oWebhookTimeout :: Natural
     , oDebug :: Bool
     , oTrace :: Bool
-    , oStatsdHost :: String
-    , oStatsdPort :: Int
+    , oNet :: Maybe Text
+    , oStatsdHost :: Maybe String
+    , oStatsdPort :: Maybe Int
+    , oRedisConnectInfo :: Redis.ConnectInfo
+    , oRestyleQueue :: ByteString
+    , oRestylerPoolSize :: Natural
     }
     deriving stock Show
 
@@ -35,22 +42,14 @@ parseOptions = execParser $ parse options "Run a RestyleMachine Agent"
 
 options :: Parser Options
 options = Options
-    <$> optional (option str
-        (  long "name"
-        <> help "Machine Name, if already in service"
+    <$> (GitHub.mkId (Proxy @GitHub.App) <$> option auto
+        (  long "github-app-id"
+        <> help "GitHub App Id"
         ))
     <*> option str
-        (  long "host"
-        <> help "Public DNS IPv5 for the instance"
+        (  long "github-app-key"
+        <> help "GitHub App Key"
         )
-    <*> option str
-        (  long "instance"
-        <> help "Instance Id for the instance"
-        )
-    <*> option str
-        (  long "certs"
-        <> help "Directory containing {ca,cert,key}.pem files"
-        <> value "/certs")
     <*> option str
         (  long "restyled-host"
         <> help "Base URL for Restyled API"
@@ -59,14 +58,27 @@ options = Options
         (  long "restyled-token"
         <> help "Token for Restyled API"
         )
-    <*> option str
-        (  long "env"
-        <> help "Environment we're operating in"
-        <> value "dev"
-        )
-    <*> option str
-        (  long "sqs-queue-url"
+    <*> optional (option str
+        (  long "instance"
+        <> help "Instance Id for the instance"
+        ))
+    <*> optional (option str
+        (  long "lifecycle-queue-url"
         <> help "SQS Queue URL for LifecycleHook notifications"
+        ))
+    <*> option auto
+        (  long "termination-delay"
+        <> help "Artificially delay termination by the given seconds"
+        )
+    <*> option auto
+        (  long "monitor-interval"
+        <> help "Interval in seconds to print Agent state"
+        <> value 5
+        )
+    <*> option auto
+        (  long "webhook-timeout"
+        <> help "Timeout to wait for next Webhook"
+        <> value 30
         )
     <*> switch
         (  long "debug"
@@ -76,15 +88,32 @@ options = Options
         (  long "trace"
         <> help "Also log AWS DEBUG messages"
         )
-    <*> option str
+    <*> optional (option str
+        (  long "net"
+        <> help "Docker --net option"
+        ))
+    <*> optional (option str
         (  long "statsd-host"
         <> help "Statsd Host"
-        <> value "localhost"
-        )
-    <*> option auto
+        ))
+    <*> optional (option auto
         (  long "statsd-port"
         <> help "Statsd Port"
-        <> value 8125
+        ))
+    <*> option (eitherReader Redis.parseConnectInfo)
+        (  long "redis-url"
+        <> help "Redis URL"
+        <> value Redis.defaultConnectInfo
+        )
+    <*> option str
+        (  long "restyle-queue"
+        <> help "Restyle queue"
+        <> value "restyled:agent:webhooks"
+        )
+    <*> option auto
+        (  long "restyler-pool-size"
+        <> help "Restyler pool size"
+        <> value 3
         )
 
 parse :: Parser a -> String -> ParserInfo a
