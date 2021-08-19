@@ -72,16 +72,21 @@ env \
   DOCKER_CERT_PATH="$PWD/client-certs" \
   docker version
 
+echo "Adding hourly prune script"
+sudo tee /etc/cron.hourly/prune <<'EOM'
+#!/bin/sh
+set -x
+find /tmp -maxdepth 1 \
+  -type d -name 'restyler-*' \
+  -cmin +$((4 * 60)) \
+  -exec rm -r {} +
+EOM
+sudo chmod +x /etc/cron.hourly/prune
+
 echo "Adding daily prune script"
 sudo tee /etc/cron.daily/prune <<'EOM'
 #!/bin/sh
 set -x
-
-find /tmp -maxdepth 1 \
-  -type d -name 'restyler-*' \
-  -cmin +$((12 * 60)) \
-  -exec rm -r {} +
-
 docker system prune --all --force
 EOM
 sudo chmod +x /etc/cron.daily/prune
