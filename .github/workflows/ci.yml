@@ -91,4 +91,4 @@ jobs:
           committer-name: Restyled Commits
           committer-email: commits@restyled.io
           repository: restyled-io/ops
-          stacks: cg-app/stacks/*/*/prod/services/restyle-machines.yaml
+          stacks: cg-app/stacks/*/*/prod/services/restyle-machines-exp.yaml
