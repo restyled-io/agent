@@ -44,9 +44,10 @@ terminateAgent
     => Agent
     -> m ()
 terminateAgent Agent { agentState } = do
-    delay <- oTerminationDelay <$> view optionsL
-    logInfo $ "Delaying termination " <> displayShow delay <> " second(s)"
-    threadDelay $ fromIntegral delay * 1000000
+    mDelay <- oTerminationDelay <$> view optionsL
+    for_ mDelay $ \delay -> do
+        logInfo $ "Delaying termination " <> displayShow delay <> " second(s)"
+        threadDelay $ fromIntegral delay * 1000000
 
     logInfo "Stopping Agent"
     writeIORef agentState AgentStopping

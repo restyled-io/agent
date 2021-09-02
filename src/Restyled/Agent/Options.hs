@@ -18,7 +18,7 @@ data Options = Options
     , oRestyledToken :: Text
     , oInstance :: Maybe Text
     , oLifecycleQueueUrl :: Maybe Text
-    , oTerminationDelay :: Natural
+    , oTerminationDelay :: Maybe Natural
     , oMonitorInterval :: Natural
     , oWebhookTimeout :: Natural
     , oDebug :: Bool
@@ -66,19 +66,19 @@ options = Options
         (  long "lifecycle-queue-url"
         <> help "SQS Queue URL for LifecycleHook notifications"
         ))
-    <*> option auto
+    <*> optional (option auto
         (  long "termination-delay"
         <> help "Artificially delay termination by the given seconds"
-        )
+        ))
     <*> option auto
         (  long "monitor-interval"
         <> help "Interval in seconds to print Agent state"
-        <> value 5
+        <> value 60
         )
     <*> option auto
         (  long "webhook-timeout"
         <> help "Timeout to wait for next Webhook"
-        <> value 30
+        <> value 10
         )
     <*> switch
         (  long "debug"
