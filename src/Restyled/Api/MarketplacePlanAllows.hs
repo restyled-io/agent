@@ -1,8 +1,7 @@
 module Restyled.Api.MarketplacePlanAllows
     ( MarketplacePlanAllows(..)
     , MarketplacePlanLimitation(..)
-    )
-where
+    ) where
 
 import RIO
 

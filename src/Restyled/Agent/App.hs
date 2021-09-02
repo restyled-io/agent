@@ -1,17 +1,16 @@
 module Restyled.Agent.App
     ( App
     , withApp
-    )
-where
+    ) where
 
 import RIO
 
 import qualified Network.AWS as AWS
+import RIO.Process
 import Restyled.Agent.AWS
 import Restyled.Agent.Options
 import Restyled.Agent.Redis (HasRedis(..))
 import qualified Restyled.Agent.Redis as Redis
-import RIO.Process
 
 data App = App
     { appOptions :: Options

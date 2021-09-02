@@ -2,8 +2,7 @@
 
 module Restyled.Api.Repo
     ( ApiRepo(..)
-    )
-where
+    ) where
 
 import RIO
 

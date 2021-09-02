@@ -2,8 +2,7 @@ module Restyled.Agent.Options
     ( Options(..)
     , HasOptions(..)
     , parseOptions
-    )
-where
+    ) where
 
 import RIO
 

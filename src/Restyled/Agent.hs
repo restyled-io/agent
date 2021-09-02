@@ -6,19 +6,18 @@ module Restyled.Agent
     , terminateAgent
     , monitorAgent
     , runAgent
-    )
-where
+    ) where
 
 import RIO hiding (timeout)
 
 import Control.Lens (_2)
 import Data.Aeson
 import Data.Functor.Syntax ((<$$>))
+import RIO.Process
 import Restyled.Agent.Options
 import Restyled.Agent.Redis
 import Restyled.Agent.Restyler
 import Restyled.Agent.ThreadPool
-import RIO.Process
 
 data Agent = Agent
     { agentState :: IORef AgentState

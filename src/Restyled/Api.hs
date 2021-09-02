@@ -5,20 +5,19 @@ module Restyled.Api
     ( upsertRepo
     , createJob
     , completeJob
-    )
-where
+    ) where
 
 import RIO
 
 import Data.Aeson
 import Network.HTTP.Simple
 import Network.HTTP.Types (hAuthorization)
+import RIO.Text (unpack)
+import RIO.Time (UTCTime, getCurrentTime)
 import Restyled.Agent.GitHub
 import Restyled.Agent.Options
 import Restyled.Api.Job
 import Restyled.Api.Repo
-import RIO.Text (unpack)
-import RIO.Time (UTCTime, getCurrentTime)
 
 data ApiUpsertRepo = ApiUpsertRepo
     { owner :: Name Owner
