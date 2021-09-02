@@ -17,6 +17,5 @@ main = do
         mAgent <- withPendingLifecycleHook createAgent
 
         for_ mAgent $ \agent -> do
-            void $ async $ monitorAgent agent
             void $ async $ withTerminatingLifecycleHook $ terminateAgent agent
             runAgent agent

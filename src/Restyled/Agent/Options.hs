@@ -19,7 +19,6 @@ data Options = Options
     , oInstance :: Maybe Text
     , oLifecycleQueueUrl :: Maybe Text
     , oTerminationDelay :: Maybe Natural
-    , oMonitorInterval :: Natural
     , oWebhookTimeout :: Natural
     , oDebug :: Bool
     , oTrace :: Bool
@@ -70,11 +69,6 @@ options = Options
         (  long "termination-delay"
         <> help "Artificially delay termination by the given seconds"
         ))
-    <*> option auto
-        (  long "monitor-interval"
-        <> help "Interval in seconds to print Agent state"
-        <> value 60
-        )
     <*> option auto
         (  long "webhook-timeout"
         <> help "Timeout to wait for next Webhook"

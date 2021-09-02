@@ -4,7 +4,6 @@ module Restyled.Agent
     ( Agent
     , createAgent
     , terminateAgent
-    , monitorAgent
     , runAgent
     )
 where
@@ -51,21 +50,6 @@ terminateAgent Agent { agentState } = do
 
     logInfo "Stopping Agent"
     writeIORef agentState AgentStopping
-
-monitorAgent
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasOptions env)
-    => Agent
-    -> m ()
-monitorAgent Agent { agentState } = forever $ do
-    state <- readIORef agentState
-    interval <- oMonitorInterval <$> view optionsL
-    logInfo
-        $ "Agent state ("
-        <> displayShow interval
-        <> "s)"
-        <> ": "
-        <> display state
-    threadDelay $ fromIntegral interval * 1000000
 
 runAgent
     :: ( MonadUnliftIO m
