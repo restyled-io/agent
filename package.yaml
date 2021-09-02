@@ -72,7 +72,6 @@ executables:
     source-dirs: app
     dependencies:
       - agent
-
 # tests:
 #   doctest:
 #     main: Main.hs
