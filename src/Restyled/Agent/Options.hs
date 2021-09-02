@@ -42,7 +42,7 @@ parseOptions = execParser $ parse options "Run a RestyleMachine Agent"
 
 options :: Parser Options
 options = Options
-    <$> (GitHub.mkId (Proxy @GitHub.App) <$> option auto
+    <$> (GitHub.mkId Proxy <$> option auto
         (  long "github-app-id"
         <> help "GitHub App Id"
         ))
