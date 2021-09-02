@@ -1,0 +1,17 @@
+remote_files:
+  - url: https://raw.githubusercontent.com/pbrisbin/dotfiles/master/config/brittany/config.yaml
+    path: brittany.yaml
+  - url: https://raw.githubusercontent.com/pbrisbin/dotfiles/master/hlint.yaml
+    path: .hlint.yaml
+  - url: https://raw.githubusercontent.com/pbrisbin/dotfiles/master/stylish-haskell.yaml
+    path: .stylish-haskell.yaml
+
+restylers_version: dev
+
+restylers:
+  - brittany:
+      image: restyled/restyler-brittany:v0.12.1.1
+  - hlint
+  - stylish-haskell:
+      image: restyled/restyler-stylish-haskell:v0.11.0.3
+  - "*"
