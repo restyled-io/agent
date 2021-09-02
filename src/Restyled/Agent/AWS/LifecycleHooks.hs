@@ -98,13 +98,11 @@ withLifecycleHook transition act = do
                 <> display transition
                 <> " hook for "
                 <> display inst
-                <> " on "
-                <> display queue
             decodedMessage <- awaitDecodedMessage queue $ predicate inst
 
             let
                 finalize action = do
-                    completeLifecycleAction (dmBody decodedMessage) action
+                    completeLifecycleAction inst (dmBody decodedMessage) action
                     deleteDecodedMessage decodedMessage
 
             eResult <- tryAny act
@@ -114,7 +112,9 @@ withLifecycleHook transition act = do
                     logError
                         $ "Error acting on "
                         <> display transition
-                        <> " Lifecycle hook: "
+                        <> " hook for "
+                        <> display inst
+                        <> ": "
                         <> displayShow ex
                     Nothing <$ finalize ActionResultAbandon
                 Right result -> Just result <$ finalize ActionResultContinue
@@ -128,14 +128,17 @@ data LifecycleHookActionResult
 
 completeLifecycleAction
     :: (MonadIO m, MonadReader env m, HasLogFunc env, HasAWS env)
-    => LifecycleHookDetails
+    => Text
+    -> LifecycleHookDetails
     -> LifecycleHookActionResult
     -> m ()
-completeLifecycleAction LifecycleHookDetails {..} action = do
+completeLifecycleAction inst LifecycleHookDetails {..} action = do
     logInfo
-        $ "Completing LifecycleHook with token "
-        <> display lhdLifecycleActionToken
-        <> " and result "
+        $ "Completing "
+        <> display lhdTransition
+        <> " hook for "
+        <> display inst
+        <> ": "
         <> displayShow result
     resp <-
         runAWS
