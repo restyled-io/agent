@@ -58,8 +58,13 @@ monitorAgent
     -> m ()
 monitorAgent Agent { agentState } = forever $ do
     state <- readIORef agentState
-    logInfo $ "Agent state: " <> display state
     interval <- oMonitorInterval <$> view optionsL
+    logInfo
+        $ "Agent state ("
+        <> displayShow interval
+        <> "s)"
+        <> ": "
+        <> display state
     threadDelay $ fromIntegral interval * 1000000
 
 runAgent
