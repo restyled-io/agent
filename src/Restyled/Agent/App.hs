@@ -8,6 +8,7 @@ import RIO
 
 import qualified Network.AWS as AWS
 import Restyled.Agent.AWS
+import Restyled.Agent.Logger
 import Restyled.Agent.Options
 import Restyled.Agent.Redis (HasRedis(..))
 import qualified Restyled.Agent.Redis as Redis
@@ -39,12 +40,19 @@ instance HasRedis App where
 
 withApp :: Options -> RIO App a -> IO a
 withApp opts@Options {..} action = do
-    logOptions <- logOptionsHandle stdout (oDebug || oTrace)
-    withLogFunc logOptions $ \lf -> do
-        app <- loadApp opts lf
-        runRIO app $ do
-            logDebug $ "Options: " <> displayShow opts
-            action
+    app <- loadApp opts logFunc
+    runRIO app $ do
+        logDebug $ "Options: " <> displayShow opts
+        action
+  where
+    logFunc = getLogFunc stdout logLevel logPrefix
+
+    logLevel
+        | oDebug = LevelDebug
+        | oTrace = LevelDebug
+        | otherwise = LevelInfo
+
+    logPrefix = maybe "" (\i -> "[" <> i <> "] ") oInstance
 
 loadApp :: Options -> LogFunc -> IO App
 loadApp opts@Options {..} lf =
