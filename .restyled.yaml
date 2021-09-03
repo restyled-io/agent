@@ -9,9 +9,7 @@ remote_files:
 restylers_version: dev
 
 restylers:
-  - brittany:
-      image: restyled/restyler-brittany:v0.12.1.1
+  - brittany
   - hlint
-  - stylish-haskell:
-      image: restyled/restyler-stylish-haskell:v0.11.0.3
+  - stylish-haskell
   - "*"
