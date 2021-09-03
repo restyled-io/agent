@@ -1,7 +1,6 @@
 module Restyled.Agent.Process
     ( runProcessDevNull
-    )
-where
+    ) where
 
 import RIO
 

@@ -1,11 +1,15 @@
 module Restyled.Agent.Restyler
     ( processPullRequestEvent
-    )
-where
+    ) where
 
 import RIO
 
 import Control.Monad.Validate
+import qualified RIO.NonEmpty as NE
+import RIO.Process
+import RIO.Text (pack, unpack)
+import qualified RIO.Text as T
+import RIO.Time
 import Restyled.Agent.GitHub
 import Restyled.Agent.Options
 import Restyled.Agent.Process
@@ -15,11 +19,6 @@ import qualified Restyled.Api.Job as ApiJob
 import Restyled.Api.MarketplacePlanAllows
 import Restyled.Api.Repo (ApiRepo)
 import qualified Restyled.Api.Repo as ApiRepo
-import qualified RIO.NonEmpty as NE
-import RIO.Process
-import RIO.Text (pack, unpack)
-import qualified RIO.Text as T
-import RIO.Time
 
 processPullRequestEvent
     :: ( MonadUnliftIO m

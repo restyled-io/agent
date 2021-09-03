@@ -18,8 +18,7 @@ module Restyled.Agent.GitHub
     , mkId
     , toPathPart
     , untagName
-    )
-where
+    ) where
 
 import RIO
 

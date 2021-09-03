@@ -1,7 +1,6 @@
 module Restyled.Agent.Logger
     ( getLogFunc
-    )
-where
+    ) where
 
 import RIO
 

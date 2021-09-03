@@ -2,18 +2,17 @@ module Restyled.Agent.AWS.LifecycleHooks
     ( LifecycleHookActionResult(..)
     , withPendingLifecycleHook
     , withTerminatingLifecycleHook
-    )
-where
+    ) where
 
 import RIO
 
 import Control.Lens ((?~))
 import Data.Aeson
 import qualified Network.AWS.AutoScaling.CompleteLifecycleAction as AWS
+import RIO.Text (unpack)
 import Restyled.Agent.AWS
 import Restyled.Agent.AWS.SQS.DecodedMessage
 import Restyled.Agent.Options
-import RIO.Text (unpack)
 
 data LifecycleTransition
     = InstanceLaunching

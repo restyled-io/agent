@@ -5,14 +5,13 @@ module Restyled.Api.Job
     , apiJobSpec
     , ApiJobId(..)
     , apiJobIdToText
-    )
-where
+    ) where
 
 import RIO hiding (id)
 
 import Data.Aeson
-import Restyled.Agent.GitHub
 import RIO.Text (pack)
+import Restyled.Agent.GitHub
 
 data ApiJob = ApiJob
     { id :: ApiJobId

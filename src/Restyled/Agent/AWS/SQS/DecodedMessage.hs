@@ -3,8 +3,7 @@ module Restyled.Agent.AWS.SQS.DecodedMessage
     , awaitDecodedMessage
     , receiveDecodedMessage
     , deleteDecodedMessage
-    )
-where
+    ) where
 
 import RIO
 
@@ -13,8 +12,8 @@ import Data.Aeson
 import qualified Network.AWS.SQS.DeleteMessage as AWS
 import qualified Network.AWS.SQS.ReceiveMessage as AWS
 import qualified Network.AWS.SQS.Types as AWS
-import Restyled.Agent.AWS
 import qualified RIO.ByteString.Lazy as BSL
+import Restyled.Agent.AWS
 
 data DecodedMessage a = DecodedMessage
     { dmQueueUrl :: Text
