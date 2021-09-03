@@ -2,8 +2,7 @@
 module GitHub.Data.PullRequests.Ext
     ( PullRequestEvent(..)
     , module GitHub.Data.PullRequests
-    )
-where
+    ) where
 
 import RIO
 

@@ -2,8 +2,7 @@ module Restyled.Agent.ThreadPool
     ( Pool
     , createPool
     , withThread
-    )
-where
+    ) where
 
 import RIO
 

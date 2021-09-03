@@ -18,8 +18,7 @@ module Restyled.Agent.Redis
 
     -- * Convenience
     , encodeStrict
-    )
-where
+    ) where
 
 import RIO
 

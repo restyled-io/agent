@@ -1,13 +1,12 @@
 module Main
     ( main
-    )
-where
+    ) where
 
 import RIO
 
 import Restyled.Agent
-import Restyled.Agent.App
 import Restyled.Agent.AWS.LifecycleHooks
+import Restyled.Agent.App
 import Restyled.Agent.Options
 
 main :: IO ()
