@@ -21,7 +21,15 @@ jobs:
       - id: prep
         run: |
           image=restyled/agent:$(echo "${{ github.sha }}" | head -c7)
+
+          if ${{ github.ref == 'refs/heads/main' }}; then
+            tags=$image,restyled/agent:main
+          else
+            tags=$image
+          fi
+
           echo "::set-output name=image::${image}"
+          echo "::set-output name=tags::${tags}"
 
       - id: buildx
         uses: docker/setup-buildx-action@v1
@@ -46,7 +54,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           push: true
-          tags: ${{ steps.prep.outputs.image }}
+          tags: ${{ steps.prep.outputs.tags }}
 
       # Avoids ever-growing cache hitting limits
       - run: |
