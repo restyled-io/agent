@@ -140,6 +140,7 @@ docker run \
   --log-opt "awslogs-region=$REGION" \
   --log-opt "awslogs-group=$LOG_GROUP" \
   --volume "$PWD"/client-certs:/certs \
+  --volume /tmp:/tmp \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   AGENT_IMAGE \
   --github-app-id "$github_app_id" \
