@@ -151,4 +151,5 @@ docker run \
   --lifecycle-queue-url "$LIFECYCLE_HOOKS_URL" \
   --net user-bridge \
   --statsd-host dd-agent \
-  --redis-url "$redis_url"
+  --redis-url "$redis_url" \
+  --restyle-queue "$RESTYLER_QUEUE_NAME"
