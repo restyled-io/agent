@@ -122,12 +122,14 @@ if [[ -n "${DD_API_KEY:-""}" ]]; then
     --net user-bridge \
     --detach \
     --name dd-agent \
+    --volume /etc/passwd:/etc/passwd:ro \
     --volume /proc/:/host/proc/:ro \
     --volume /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
     --volume /var/run/docker.sock:/var/run/docker.sock:ro \
     --env DD_API_KEY \
     --env DD_SITE \
     --env DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1 \
+    --env DD_PROCESS_AGENT_ENABLED=true \
     "gcr.io/datadoghq/agent:$DD_AGENT_MAJOR_VERSION"
 fi
 
