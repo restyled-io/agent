@@ -20,6 +20,5 @@ stack exec -- agent \
   --restyled-token "$restyled_token" \
   --restyler-pool-size 1 \
   --termination-delay 600000 \
-  --monitor-interval 3 \
   --webhook-timeout 5 \
   --debug
