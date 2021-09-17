@@ -32,7 +32,8 @@ data AgentState
 instance Display AgentState where
     display = displayShow
 
-createAgent :: (MonadIO m, MonadReader env m, HasOptions env) => m Agent
+createAgent
+    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasOptions env) => m Agent
 createAgent = do
     size <- oRestylerPoolSize <$> view optionsL
     Agent <$> newIORef AgentRunning <*> createPool size
