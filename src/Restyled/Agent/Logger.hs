@@ -6,6 +6,7 @@ import RIO
 
 import Data.ByteString.Builder (byteString, toLazyByteString)
 import qualified Data.ByteString.Char8 as BS8
+import qualified RIO.Text as T
 
 getLogFunc
     :: Handle
@@ -15,7 +16,11 @@ getLogFunc
     -> Text
     -- ^ Prefix
     -> LogFunc
-getLogFunc h logLevel prefix = mkLogFunc $ \_cs _source level msg ->
+getLogFunc h logLevel prefix = mkLogFunc $ \_cs source level msg -> do
+    let
+        source'
+            | T.null source = source
+            | otherwise = "[" <> source <> "] "
     when (level >= logLevel)
         $ BS8.hPutStrLn h
         $ toStrictBytes
@@ -23,6 +28,7 @@ getLogFunc h logLevel prefix = mkLogFunc $ \_cs _source level msg ->
         $ levelBuilder level
         <> " "
         <> byteString (encodeUtf8 prefix)
+        <> byteString (encodeUtf8 source')
         <> getUtf8Builder msg
 
 levelBuilder :: LogLevel -> Builder

@@ -1,6 +1,5 @@
--- TODO: rename module
-module Restyled.Agent
-    ( withWebhook
+module Restyled.Agent.Queue
+    ( awaitWebhook
     ) where
 
 import RIO hiding (timeout)
@@ -11,7 +10,7 @@ import Data.Functor.Syntax ((<$$>))
 import Restyled.Agent.Options
 import Restyled.Agent.Redis
 
-withWebhook
+awaitWebhook
     :: ( MonadIO m
        , MonadReader env m
        , HasLogFunc env
@@ -19,16 +18,16 @@ withWebhook
        , HasRedis env
        , FromJSON a
        )
-    => (a -> m ())
-    -> m ()
-withWebhook f = do
+    => m (Maybe a)
+awaitWebhook = do
     timeout <- oWebhookTimeout <$> view optionsL
     queueName <- oRestyleQueue <$> view optionsL
     eresult <- runRedis $ brpop [queueName] $ fromIntegral timeout
 
     case over _2 eitherDecodeStrict <$$> eresult of
-        Left err -> logWarn $ "Error Reply from Redis: " <> displayShow err
-        Right Nothing -> pure ()
+        Left err ->
+            Nothing <$ logWarn ("Error Reply from Redis: " <> displayShow err)
+        Right Nothing -> pure Nothing
         Right (Just (_, Left err)) ->
-            logWarn $ "Unexpected JSON: " <> fromString err
-        Right (Just (_, Right event)) -> f event
+            Nothing <$ logWarn ("Unexpected JSON: " <> fromString err)
+        Right (Just (_, Right event)) -> pure $ Just event

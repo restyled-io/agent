@@ -5,10 +5,11 @@ module Main
 import RIO
 
 import qualified Control.Immortal as Immortal
-import Restyled.Agent (withWebhook)
+import RIO.Text (pack)
 import Restyled.Agent.AWS.LifecycleHooks
 import Restyled.Agent.App
 import Restyled.Agent.Options
+import Restyled.Agent.Queue
 import Restyled.Agent.Restyler (processPullRequestEvent)
 
 main :: IO ()
@@ -20,8 +21,12 @@ main = do
 
             for [1 .. size] $ \n -> do
                 let label = "restyle-" <> show n
-                Immortal.createWithLabel label
-                    $ \_ -> withWebhook processPullRequestEvent
+                    source = pack label
+
+                logInfoS source "created"
+                Immortal.createWithLabel label $ \_ -> do
+                    mEvent <- awaitWebhook
+                    traverse_ (processPullRequestEvent source) mEvent
 
         for_ mThreads $ \threads -> do
             withTerminatingLifecycleHook $ do
@@ -31,4 +36,4 @@ main = do
                     threadDelay $ fromIntegral delay * 1000000
 
                 logInfo "Stopping Agent"
-                liftIO $ traverse_ Immortal.stop threads
+                liftIO $ traverse_ Immortal.mortalize threads

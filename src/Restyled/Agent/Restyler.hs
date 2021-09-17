@@ -27,11 +27,12 @@ processPullRequestEvent
        , HasOptions env
        , HasProcessContext env
        )
-    => PullRequestEvent
+    => LogSource
+    -> PullRequestEvent
     -> m ()
-processPullRequestEvent event
+processPullRequestEvent source event
     | not $ pullRequestEventIsInteresting event
-    = logDebug
+    = logDebugS source
         $ "Ignoring "
         <> displayShow (pullRequestEventAction event)
         <> " PR Event"
@@ -45,7 +46,7 @@ processPullRequestEvent event
         job <- Api.createJob repo pullRequest
         result <- runValidateT $ validatePullRequestEvent repo event
 
-        logInfo
+        logInfoS source
             $ "Job "
             <> display job
             <> " validated, result="
@@ -57,7 +58,7 @@ processPullRequestEvent event
             Right () -> dockerRunJob repo job
 
         finish <- liftIO getCurrentTime
-        logInfo
+        logInfoS source
             $ "Job "
             <> display job
             <> " complete, exitCode="
