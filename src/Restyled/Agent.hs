@@ -66,7 +66,10 @@ runAgent agent@Agent { agentState, agentPool } = do
 
     case state of
         AgentRunning -> do
-            withWebhook $ withThread agentPool . processPullRequestEvent
+            handleAny (logError . displayShow)
+                $ withWebhook
+                $ withThread agentPool
+                . processPullRequestEvent
             runAgent agent
         AgentStopping -> writeIORef agentState AgentStopped
         AgentStopped -> pure ()
