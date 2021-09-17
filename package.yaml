@@ -71,6 +71,7 @@ executables:
     source-dirs: app
     dependencies:
       - agent
+      - immortal
 
 # tests:
 #   doctest:
