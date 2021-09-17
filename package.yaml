@@ -57,7 +57,6 @@ library:
     - monad-validate
     - parsec
     - random
-    - resource-pool
 
     # For GitHub extension modules
     - jwt

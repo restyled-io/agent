@@ -6,34 +6,31 @@ module Restyled.Agent.ThreadPool
 
 import RIO
 
-import qualified Data.Pool as Pool
+newtype Pool = Pool
+    { _poolSize :: IORef Natural
+    }
 
-newtype Pool = Pool (Pool.Pool ())
-
-createPool
-    :: (MonadIO m, MonadReader env m, HasLogFunc env) => Natural -> m Pool
-createPool size = do
-    logFunc <- view logFuncL
-
-    let info :: MonadIO m => Utf8Builder -> m ()
-        info msg = runRIO logFunc $ logInfo $ "[ThreadPool] " <> msg
-
-    liftIO $ Pool <$> Pool.createPool
-        (info "thread create")
-        (\_ -> info "thread destroy")
-        1
-        (60 * 60 * 24)
-        (fromIntegral size)
+createPool :: MonadIO m => Natural -> m Pool
+createPool size = Pool <$> newIORef size
 
 withThread
     :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env)
     => Pool
     -> m ()
     -> m ()
-withThread (Pool pool) f = do
-    runInIO <- askRunInIO
-    handleAny err $ liftIO $ Pool.withResource pool $ \() -> async_ $ runInIO f
-    where err ex = logError $ "[withThread] " <> displayShow ex
+withThread pool f = do
+    available <- takeThread pool
 
-async_ :: MonadUnliftIO m => m a -> m ()
-async_ = void . async
+    if available
+        then void $ async $ f `finally` returnThread pool
+        else do
+            logWarn "All threads busy, waiting 5s"
+            threadDelay $ 5 * 1000000
+            withThread pool f
+
+takeThread :: MonadIO m => Pool -> m Bool
+takeThread (Pool ref) = atomicModifyIORef' ref
+    $ \n -> if n <= 0 then (n, False) else (n `subtract` 1, True)
+
+returnThread :: MonadIO m => Pool -> m ()
+returnThread (Pool ref) = atomicModifyIORef' ref $ \n -> (n + 1, ())
