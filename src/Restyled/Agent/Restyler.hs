@@ -134,14 +134,11 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
     handleAny warn $ void $ runRestylerImage
         repo
         job
-        ["--entrypoint", "cat"]
-        [pack tmp]
+        ["--entrypoint", "fold"]
+        ["--width", "72", "--spaces", pack tmp]
     pure ExitSuccess
   where
-    prefix = "Skipping Job:"
-    formatMessages = \case
-        (msg :| []) -> prefix <> " " <> msg
-        _ -> T.unlines $ (prefix :) $ map ("  • " <>) $ NE.toList messages
+    formatMessages = T.intercalate "\n\n" . NE.toList
     warn ex =
         logWarn
             $ "Ignoring exception during skipped-job-handling: "
