@@ -10,13 +10,20 @@ import qualified Data.Pool as Pool
 
 newtype Pool = Pool (Pool.Pool ())
 
-createPool :: MonadIO m => Natural -> m Pool
-createPool size = liftIO $ Pool <$> Pool.createPool
-    (pure ())
-    (\_ -> pure ())
-    1
-    (60 * 60 * 24)
-    (fromIntegral size)
+createPool
+    :: (MonadIO m, MonadReader env m, HasLogFunc env) => Natural -> m Pool
+createPool size = do
+    logFunc <- view logFuncL
+
+    let info :: MonadIO m => Utf8Builder -> m ()
+        info msg = runRIO logFunc $ logInfo $ "[ThreadPool] " <> msg
+
+    liftIO $ Pool <$> Pool.createPool
+        (info "thread create")
+        (\_ -> info "thread destroy")
+        1
+        (60 * 60 * 24)
+        (fromIntegral size)
 
 withThread
     :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env)
