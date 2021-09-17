@@ -25,5 +25,8 @@ withThread
     -> m ()
 withThread (Pool pool) f = do
     runInIO <- askRunInIO
-    handleAny err $ liftIO $ Pool.withResource pool $ \() -> runInIO f
+    handleAny err $ liftIO $ Pool.withResource pool $ \() -> async_ $ runInIO f
     where err ex = logError $ "Exception in withThread: " <> displayShow ex
+
+async_ :: MonadUnliftIO m => m a -> m ()
+async_ = void . async
