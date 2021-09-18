@@ -46,6 +46,7 @@ library:
     - conduit
     - conduit-extra
     - datadog
+    - envparse
     - github
     - hedis
     - http-conduit

@@ -10,15 +10,14 @@ get_ssm_parameter_value() {
     --output text
 }
 
-# Created locally, grants no access to anything real
-restyled_token=b43e63a2-0c49-4ff3-af55-00ff24b13598
+GITHUB_APP_ID=$(get_ssm_parameter_value github-app-id)
+GITHUB_APP_KEY=$(get_ssm_parameter_value github-app-key)
 
-stack exec -- agent \
-  --github-app-id "$(get_ssm_parameter_value github-app-id)" \
-  --github-app-key "$(get_ssm_parameter_value github-app-key)" \
-  --restyled-host "https://restyled.ngrok.io" \
-  --restyled-token "$restyled_token" \
-  --restyler-pool-size 1 \
-  --termination-delay 600000 \
-  --webhook-timeout 5 \
-  --debug
+export GITHUB_APP_ID
+export GITHUB_APP_KEY
+export RESTYLED_HOST=https://restyled.ngrok.io
+
+# Created locally, grants no access to anything real
+export RESTYLED_TOKEN=b43e63a2-0c49-4ff3-af55-00ff24b13598
+
+stack exec -- agent --debug

@@ -15,7 +15,7 @@ import Restyled.Agent.Redis
 import Restyled.Agent.Restyler (processPullRequestEvent)
 
 newtype Agent = Agent
-    { _unAgent :: [Thread]
+    { unAgent :: [Thread]
     }
 
 data Thread = Thread
@@ -75,12 +75,7 @@ shutdownAgent
        )
     => Agent
     -> m ()
-shutdownAgent (Agent threads) = do
-    mDelay <- oTerminationDelay <$> view optionsL
-    for_ mDelay $ \delay -> do
-        logInfo $ "Delay termination " <> displayShow delay <> "s"
-        threadDelay $ fromIntegral delay * 1000000
-    traverse_ shutdownAgentThread threads
+shutdownAgent = traverse_ shutdownAgentThread . unAgent
 
 shutdownAgentThread
     :: (MonadIO m, MonadReader env m, HasLogFunc env) => Thread -> m ()

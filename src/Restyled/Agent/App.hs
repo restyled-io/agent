@@ -40,18 +40,14 @@ instance HasRedis App where
 withApp :: Options -> RIO App a -> IO a
 withApp opts@Options {..} action = do
     app <- loadApp opts logFunc
-    runRIO app $ do
-        logDebug $ "Options: " <> displayShow opts
-        action
+    runRIO app action
   where
-    logFunc = getLogFunc stdout logLevel logPrefix
+    logFunc = getLogFunc stdout logLevel $ "[" <> oInstance <> "] "
 
     logLevel
         | oDebug = LevelDebug
         | oTrace = LevelDebug
         | otherwise = LevelInfo
-
-    logPrefix = maybe "" (\i -> "[" <> i <> "] ") oInstance
 
 loadApp :: Options -> LogFunc -> IO App
 loadApp opts@Options {..} lf =

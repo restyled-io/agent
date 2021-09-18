@@ -13,6 +13,18 @@ ec2metadata() {
   curl -H "X-aws-ec2-metadata-token: $token" "$base/meta-data/$1"
 }
 
+host=$(ec2metadata public-hostname)
+
+if [[ -z "$host" ]]; then
+  echo "Unable to get public-hostname" >&2
+  exit 1
+fi
+
+INSTANCE_ID=$(ec2metadata instance-id)
+export INSTANCE_ID
+
+# TODO: Set these in CFN (like LIFECYCLE_HOOKS_URL, RESTYLER_QUEUE_NAME), so we
+# handle SSM there, which is more secure.
 get_ssm_parameter_value() {
   aws \
     --region "$REGION" ssm get-parameter \
@@ -21,47 +33,17 @@ get_ssm_parameter_value() {
     --output text
 }
 
-host=$(ec2metadata public-hostname)
+GITHUB_APP_ID=$(get_ssm_parameter_value github-app-id)
+export GITHUB_APP_ID
 
-if [[ -z "$host" ]]; then
-  echo "Unable to get public-hostname" >&2
-  exit 1
-fi
+GITHUB_APP_KEY=$(get_ssm_parameter_value github-app-key)
+export GITHUB_APP_KEY
 
-instance_id=$(ec2metadata instance-id)
+RESTYLED_TOKEN=$(get_ssm_parameter_value restyled-api-token)
+export RESTYLED_TOKEN
 
-if [[ -z "$instance_id" ]]; then
-  echo "Unable to get instance-id" >&2
-  exit 1
-fi
-
-github_app_id=$(get_ssm_parameter_value github-app-id)
-
-if [[ -z "$github_app_id" ]]; then
-  echo "Unable to get github-app-id" >&2
-  exit 1
-fi
-
-github_app_key=$(get_ssm_parameter_value github-app-key)
-
-if [[ -z "$github_app_key" ]]; then
-  echo "Unable to get github-app-key" >&2
-  exit 1
-fi
-
-restyled_api_token=$(get_ssm_parameter_value restyled-api-token)
-
-if [[ -z "$restyled_api_token" ]]; then
-  echo "Unable to get restyled-api-token" >&2
-  exit 1
-fi
-
-redis_url=$(get_ssm_parameter_value redis-url)
-
-if [[ -z "$redis_url" ]]; then
-  echo "Unable to get redis-url" >&2
-  exit 1
-fi
+REDIS_URL=$(get_ssm_parameter_value redis-url)
+export REDIS_URL
 
 echo "Generating TLS certificates"
 mkdir -p certs
@@ -141,17 +123,17 @@ docker run \
   --log-driver=awslogs \
   --log-opt "awslogs-region=$REGION" \
   --log-opt "awslogs-group=$LOG_GROUP" \
+  --env GITHUB_APP_ID \
+  --env GITHUB_APP_KEY \
+  --env RESTYLED_TOKEN \
+  --env INSTANCE_ID \
+  --env LIFECYCLE_HOOKS_URL \
+  --env STATSD_HOST=dd-agent \
+  --env REDIS_URL \
+  --env RESTYLER_QUEUE_NAME \
+  --env RESTYLER_POOL_SIZE=3 \
   --volume "$PWD"/client-certs:/certs \
   --volume /tmp:/tmp \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   AGENT_IMAGE \
-  --github-app-id "$github_app_id" \
-  --github-app-key "$github_app_key" \
-  --restyled-host "https://restyled.io" \
-  --restyled-token "$restyled_api_token" \
-  --instance "$instance_id" \
-  --lifecycle-queue-url "$LIFECYCLE_HOOKS_URL" \
-  --net user-bridge \
-  --statsd-host dd-agent \
-  --redis-url "$redis_url" \
-  --restyle-queue "$RESTYLER_QUEUE_NAME"
+  --net user-bridge
