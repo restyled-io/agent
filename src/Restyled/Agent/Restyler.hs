@@ -209,7 +209,7 @@ validateAgainstDisabled repo = refuteUnless (pure message)
             <> toPathPart (ApiRepo.owner repo)
             <> "/"
             <> toPathPart (ApiRepo.name repo)
-            <> "has been disabled."
+            <> " has been disabled."
             <> " If you believe this is an error,"
             <> " please reach out to support@restyled.io"
 
