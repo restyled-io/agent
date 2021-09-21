@@ -48,8 +48,16 @@ bootAgentThread
     -> m Thread
 bootAgentThread n = do
     logInfoS label "creating"
-    Thread label <$> Immortal.create (\_ -> webhookLoop label)
-    where label = pack $ "restyle-" <> show n
+    Thread label <$> Immortal.create
+        (\t -> Immortal.onUnexpectedFinish t logUnexpectedFinish
+            $ webhookLoop label
+        )
+  where
+    label = pack $ "restyle-" <> show n
+
+    logUnexpectedFinish = \case
+        Left ex -> logErrorS label $ "Unexpected finish: " <> displayShow ex
+        Right () -> pure ()
 
 webhookLoop
     :: ( MonadUnliftIO m
