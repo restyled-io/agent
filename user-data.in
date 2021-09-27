@@ -33,15 +33,6 @@ get_ssm_parameter_value() {
     --output text
 }
 
-GITHUB_APP_ID=$(get_ssm_parameter_value github-app-id)
-export GITHUB_APP_ID
-
-GITHUB_APP_KEY=$(get_ssm_parameter_value github-app-key)
-export GITHUB_APP_KEY
-
-RESTYLED_TOKEN=$(get_ssm_parameter_value restyled-api-token)
-export RESTYLED_TOKEN
-
 REDIS_URL=$(get_ssm_parameter_value redis-url)
 export REDIS_URL
 
@@ -131,7 +122,7 @@ docker run \
   --env STATSD_HOST=dd-agent \
   --env REDIS_URL \
   --env RESTYLER_QUEUE_NAME \
-  --env RESTYLER_POOL_SIZE=3 \
+  --env RESTYLER_POOL_SIZE \
   --volume "$PWD"/client-certs:/certs \
   --volume /tmp:/tmp \
   --volume /var/run/docker.sock:/var/run/docker.sock \
