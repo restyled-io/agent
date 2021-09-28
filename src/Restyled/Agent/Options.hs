@@ -26,6 +26,7 @@ data Options = Options
     , oRedisConnectInfo :: Redis.ConnectInfo
     , oRestyleQueue :: ByteString
     , oRestylerPoolSize :: Natural
+    , oShutdownTimeoutMinutes :: Natural
     }
     deriving stock Show
 
