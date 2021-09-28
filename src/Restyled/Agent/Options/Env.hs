@@ -21,6 +21,7 @@ data OptionsEnv = OptionsEnv
     , oRedisConnectInfo :: Redis.ConnectInfo
     , oRestyleQueue :: ByteString
     , oRestylerPoolSize :: Natural
+    , oShutdownTimeoutMinutes :: Natural
     }
 
 -- brittany-disable-next-binding
@@ -38,6 +39,7 @@ parseEnv = Env.parse (header "Run a RestyleMachine Agent") $ OptionsEnv
     <*> var (eith Redis.parseConnectInfo) "REDIS_URL" (help "Redis URL" <> def Redis.defaultConnectInfo)
     <*> var str "RESTYLER_QUEUE_NAME" (help "Queue to fetch Restyle webhooks" <> def "restyled:agent:webhooks")
     <*> var auto "RESTYLER_POOL_SIZE" (help "How many Restyle threads to run" <> def 1)
+    <*> var auto "SHUTDOWN_TIMEOUT" (help "Minutes to wait for shutdown" <> def 15)
 
 eith :: (String -> Either String a) -> Env.Reader Error a
 eith f = first UnreadError . f

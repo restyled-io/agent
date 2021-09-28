@@ -83,10 +83,33 @@ shutdownAgent
        )
     => Agent
     -> m ()
-shutdownAgent = traverse_ shutdownAgentThread . unAgent
+shutdownAgent agent = do
+    t <- oShutdownTimeoutMinutes <$> view optionsL
+    traverse_ mortalizeThread $ unAgent agent
+    as <- (:) <$> waitTimeout t <*> waitThreads (unAgent agent)
+    void $ waitAny as
 
-shutdownAgentThread
+mortalizeThread
     :: (MonadIO m, MonadReader env m, HasLogFunc env) => Thread -> m ()
-shutdownAgentThread Thread {..} = do
+mortalizeThread Thread {..} = do
     logInfoS tLabel "mortalizing"
     liftIO $ Immortal.mortalize tThread
+
+waitTimeout
+    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env)
+    => Natural
+    -> m (Async ())
+waitTimeout mins = async $ do
+    threadDelay $ fromIntegral mins * 60 * 1000000
+    logWarn $ "Shutdown timed out after " <> displayShow mins <> " minutes"
+
+waitThreads
+    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env)
+    => [Thread]
+    -> m [Async ()]
+waitThreads = traverse (async . waitThread)
+
+waitThread :: (MonadIO m, MonadReader env m, HasLogFunc env) => Thread -> m ()
+waitThread Thread {..} = do
+    liftIO $ Immortal.wait tThread
+    logInfoS tLabel "done"
