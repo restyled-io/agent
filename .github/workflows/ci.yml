@@ -9,11 +9,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: freckle/stack-cache-action@main
-      - uses: freckle/stack-action@main
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-cache-action@v2
+      - uses: freckle/stack-action@v3
+      - uses: freckle/weeder-action@v1
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rwe/actions-hlint-setup@v1
+      - uses: rwe/actions-hlint-run@v2
         with:
-          weeder: false
+          fail-on: warning
 
   image:
     runs-on: ubuntu-latest
@@ -74,7 +82,7 @@ jobs:
       AWS_REGION: us-east-1
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: artifact
         run: |
           agent_image=${{ needs.image.outputs.image }}
