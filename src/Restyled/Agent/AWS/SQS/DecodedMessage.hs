@@ -7,11 +7,11 @@ module Restyled.Agent.AWS.SQS.DecodedMessage
 
 import RIO
 
+import qualified Amazonka.SQS.DeleteMessage as AWS
+import qualified Amazonka.SQS.ReceiveMessage as AWS
+import qualified Amazonka.SQS.Types as AWS
 import Control.Lens ((?~))
 import Data.Aeson
-import qualified Network.AWS.SQS.DeleteMessage as AWS
-import qualified Network.AWS.SQS.ReceiveMessage as AWS
-import qualified Network.AWS.SQS.Types as AWS
 import qualified RIO.ByteString.Lazy as BSL
 import Restyled.Agent.AWS
 
@@ -23,6 +23,7 @@ data DecodedMessage a = DecodedMessage
 
 awaitDecodedMessage
     :: ( MonadUnliftIO m
+       , MonadResource m
        , MonadReader env m
        , HasLogFunc env
        , HasAWS env
@@ -51,33 +52,46 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
         Nothing <$ logError ("Exception awaiting SQS Message: " <> display ex)
 
 receiveDecodedMessage
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasAWS env, FromJSON a)
+    :: ( MonadIO m
+       , MonadResource m
+       , MonadReader env m
+       , HasLogFunc env
+       , HasAWS env
+       , FromJSON a
+       )
     => Text
     -> m (Maybe (Either String (DecodedMessage a)))
 receiveDecodedMessage queueUrl = do
     resp <-
-        runAWS
-        $ AWS.receiveMessage queueUrl
-        & (AWS.rmMaxNumberOfMessages ?~ 1)
-        & (AWS.rmWaitTimeSeconds ?~ 20)
+        send
+        $ AWS.newReceiveMessage queueUrl
+        & (AWS.receiveMessage_maxNumberOfMessages ?~ 1)
+        & (AWS.receiveMessage_waitTimeSeconds ?~ 20)
     logDebug $ "Response: " <> displayShow resp
 
     pure $ do
-        guard $ resp ^. AWS.rmrsResponseStatus == 200
-        msg <- listToMaybe $ resp ^. AWS.rmrsMessages
-        body <- msg ^. AWS.mBody
-        recieptHandle <- msg ^. AWS.mReceiptHandle
+        guard $ resp ^. AWS.receiveMessageResponse_httpStatus == 200
+        msgs <- resp ^. AWS.receiveMessageResponse_messages
+        msg <- listToMaybe msgs
+        body <- msg ^. AWS.message_body
+        recieptHandle <- msg ^. AWS.message_receiptHandle
         pure $ decodedMessage body recieptHandle
   where
     decodedMessage body recieptHandle = DecodedMessage queueUrl recieptHandle
         <$> eitherDecode (BSL.fromStrict $ encodeUtf8 body)
 
 deleteDecodedMessage
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasAWS env)
+    :: ( MonadIO m
+       , MonadResource m
+       , MonadReader env m
+       , HasLogFunc env
+       , HasAWS env
+       )
     => DecodedMessage a
     -> m ()
 deleteDecodedMessage DecodedMessage {..} = do
-    resp <- runAWS $ AWS.deleteMessage dmQueueUrl dmReceiptHandle
+    let req = AWS.newDeleteMessage dmQueueUrl dmReceiptHandle
+    resp <- send req
     logDebug ("Response: " <> displayShow resp)
 
 -- | Keep running an operation until it becomes a 'Just', then return the value

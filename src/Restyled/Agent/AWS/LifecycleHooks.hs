@@ -6,9 +6,9 @@ module Restyled.Agent.AWS.LifecycleHooks
 
 import RIO
 
+import qualified Amazonka.AutoScaling.CompleteLifecycleAction as AWS
 import Control.Lens ((?~))
 import Data.Aeson
-import qualified Network.AWS.AutoScaling.CompleteLifecycleAction as AWS
 import RIO.Text (unpack)
 import Restyled.Agent.AWS
 import Restyled.Agent.AWS.SQS.DecodedMessage
@@ -51,6 +51,7 @@ instance FromJSON LifecycleHookDetails where
 
 withPendingLifecycleHook
     :: ( MonadUnliftIO m
+       , MonadResource m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env
@@ -63,6 +64,7 @@ withPendingLifecycleHook = withLifecycleHook InstanceLaunching
 
 withTerminatingLifecycleHook
     :: ( MonadUnliftIO m
+       , MonadResource m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env
@@ -75,6 +77,7 @@ withTerminatingLifecycleHook = withLifecycleHook InstanceTerminating
 
 withLifecycleHook
     :: ( MonadUnliftIO m
+       , MonadResource m
        , MonadReader env m
        , HasOptions env
        , HasLogFunc env
@@ -115,7 +118,12 @@ data LifecycleHookActionResult
     | ActionResultAbandon
 
 completeLifecycleAction
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasAWS env)
+    :: ( MonadIO m
+       , MonadResource m
+       , MonadReader env m
+       , HasLogFunc env
+       , HasAWS env
+       )
     => LifecycleHookDetails
     -> LifecycleHookActionResult
     -> m ()
@@ -126,11 +134,14 @@ completeLifecycleAction LifecycleHookDetails {..} action = do
         <> " with "
         <> displayShow result
     resp <-
-        runAWS
-        $ AWS.completeLifecycleAction lhdHookName lhdScalingGroupName result
-        & (AWS.claInstanceId ?~ lhdInstanceId)
-        & (AWS.claLifecycleActionToken ?~ lhdLifecycleActionToken)
-    logDebug $ "Status: " <> displayShow (resp ^. AWS.clarsResponseStatus)
+        send
+        $ AWS.newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
+        & (AWS.completeLifecycleAction_instanceId ?~ lhdInstanceId)
+        & (AWS.completeLifecycleAction_lifecycleActionToken
+          ?~ lhdLifecycleActionToken
+          )
+    logDebug $ "Status: " <> displayShow
+        (resp ^. AWS.completeLifecycleActionResponse_httpStatus)
   where
     result = case action of
         ActionResultContinue -> "CONTINUE"

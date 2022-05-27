@@ -5,7 +5,8 @@ module Restyled.Agent.App
 
 import RIO
 
-import qualified Network.AWS as AWS
+import qualified Amazonka as AWS
+import RIO.Orphans (HasResourceMap(..), ResourceMap, withResourceMap)
 import RIO.Process
 import Restyled.Agent.AWS
 import Restyled.Agent.Logger
@@ -17,6 +18,7 @@ data App = App
     { appOptions :: Options
     , appLogFunc :: LogFunc
     , appProcessContext :: ProcessContext
+    , appResourceMap :: ResourceMap
     , appAWS :: AWS.Env
     , appRedisConn :: Redis.Connection
     }
@@ -31,6 +33,9 @@ instance HasProcessContext App where
     processContextL =
         lens appProcessContext $ \x y -> x { appProcessContext = y }
 
+instance HasResourceMap App where
+    resourceMapL = lens appResourceMap $ \x y -> x { appResourceMap = y }
+
 instance HasAWS App where
     awsEnvL = lens appAWS $ \x y -> x { appAWS = y }
 
@@ -39,8 +44,14 @@ instance HasRedis App where
 
 withApp :: Options -> RIO App a -> IO a
 withApp opts@Options {..} action = do
-    app <- loadApp opts logFunc
-    runRIO app action
+    withResourceMap $ \resourceMap -> do
+        app <-
+            App opts logFunc
+            <$> mkDefaultProcessContext
+            <*> pure resourceMap
+            <*> discoverAWS oTrace
+            <*> Redis.checkedConnect oRedisConnectInfo
+        runRIO app action
   where
     logFunc = getLogFunc stdout logLevel $ "[" <> oInstance <> "] "
 
@@ -48,10 +59,3 @@ withApp opts@Options {..} action = do
         | oDebug = LevelDebug
         | oTrace = LevelDebug
         | otherwise = LevelInfo
-
-loadApp :: Options -> LogFunc -> IO App
-loadApp opts@Options {..} lf =
-    App opts lf
-        <$> mkDefaultProcessContext
-        <*> discoverAWS oTrace
-        <*> Redis.checkedConnect oRedisConnectInfo
