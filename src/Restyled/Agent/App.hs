@@ -27,11 +27,7 @@ instance HasAWS App where
 instance HasRedis App where
     redisConnectionL = lens appRedisConn $ \x y -> x { appRedisConn = y }
 
-withApp
-    :: MonadUnliftIO m
-    => Options
-    -> ReaderT App (LoggingT (ResourceT m)) a
-    -> m a
+withApp :: Options -> ReaderT App (LoggingT (ResourceT IO)) a -> IO a
 withApp opts@Options {..} action = do
     app <- App opts <$> AWS.discover oTrace <*> liftIO
         (Redis.checkedConnect oRedisConnectInfo)
@@ -39,9 +35,12 @@ withApp opts@Options {..} action = do
     runResourceT
         $ runStdoutLoggingT
         $ filterLogger (const (>= logLevel))
+        $ withThreadContext context
         $ runReaderT action app
   where
     logLevel
         | oDebug = LevelDebug
         | oTrace = LevelDebug
         | otherwise = LevelInfo
+
+    context = ["instance" .= oInstance, "queue" .= decodeUtf8 oRestyleQueue]
