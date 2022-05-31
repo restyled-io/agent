@@ -5,23 +5,22 @@ module Restyled.Agent.Prelude
     , exitCodeInt
     ) where
 
-import RIO as X
-    hiding
-        ( LogLevel(..)
-        , LogSource
-        , logDebug
-        , logDebugS
-        , logError
-        , logErrorS
-        , logInfo
-        , logInfoS
-        , logOther
-        , logOtherS
-        , logWarn
-        , logWarnS
-        )
+import RIO as X hiding
+    ( LogLevel(..)
+    , LogSource
+    , logDebug
+    , logDebugS
+    , logError
+    , logErrorS
+    , logInfo
+    , logInfoS
+    , logOther
+    , logOtherS
+    , logWarn
+    , logWarnS
+    )
 
-import Control.Lens as X ((?~), _1, _2)
+import Control.Lens as X (_1, _2, (?~))
 import Control.Monad.Catch as X (MonadMask)
 import Control.Monad.Logger.Aeson as X
 import Data.Aeson as X hiding (Options)
