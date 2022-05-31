@@ -34,6 +34,7 @@ main = do
                             $ "Agent shutdown timed out after "
                             <> pack (show m)
                             <> " minute(s)"
+                            :# []
                     Just (Just (Right ())) -> logInfo "Agent shutdown complete"
 
 threadDelayMinutes :: MonadIO m => Natural -> m ()

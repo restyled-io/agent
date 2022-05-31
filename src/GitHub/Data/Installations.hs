@@ -13,3 +13,7 @@ newtype Installation = Installation
 
 instance FromJSON Installation where
     parseJSON = withObject "Installation" $ \o -> Installation <$> o .: "id"
+
+instance ToJSON Installation where
+    toJSON Installation {..} = object ["id" .= installationId]
+    toEncoding Installation {..} = pairs $ "id" .= installationId

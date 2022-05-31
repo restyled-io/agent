@@ -22,10 +22,7 @@ processPullRequestEvent
     -> m ()
 processPullRequestEvent event
     | not $ pullRequestEventIsInteresting event
-    = logDebug
-        $ "Ignoring "
-        <> pack (show $ pullRequestEventAction event)
-        <> " PR Event"
+    = logDebug $ "Ignoring uninteresting PR Event" :# ["event" .= event]
     | otherwise
     = do
         repo <- Api.upsertRepo
@@ -36,8 +33,7 @@ processPullRequestEvent event
         job <- Api.createJob repo pullRequest
         result <- runValidateT $ validatePullRequestEvent repo event
 
-        logInfo $ "Job " <> displayT job <> " validated, result=" <> pack
-            (show result)
+        logInfo $ "Job validated" :# ["job" .= job, "result" .= result]
 
         start <- liftIO getCurrentTime
         exitCode <- case result of
@@ -46,12 +42,11 @@ processPullRequestEvent event
 
         finish <- liftIO getCurrentTime
         logInfo
-            $ "Job "
-            <> displayT job
-            <> " complete, exitCode="
-            <> pack (show exitCode)
-            <> ", duration="
-            <> pack (show $ diffUTCTime finish start)
+            $ "Job complete"
+            :# [ "job" .= job
+               , "exitCode" .= exitCodeInt exitCode
+               , "duration" .= diffUTCTime finish start
+               ]
 
         void $ Api.completeJob (ApiJob.id job) exitCode
     where pullRequest = pullRequestNumber $ pullRequestEventPullRequest event
@@ -92,7 +87,7 @@ exceptionHandler
     -> SomeException
     -> m ExitCode
 exceptionHandler repo job ex = do
-    logError $ "Exception running Job: " <> pack (displayException ex)
+    logError $ "Exception running Job" :# ["exception" .= displayException ex]
     let messages :: NonEmpty Text
         messages = pure "Unexpected error running Job"
     ExitFailure 99 <$ dockerRunSkippedJob repo job messages
@@ -118,8 +113,9 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
 
     warn :: (MonadLogger m, Exception ex) => ex -> m ()
     warn ex =
-        logWarn $ "Ignoring exception during skipped-job-handling: " <> pack
-            (displayException ex)
+        logWarn
+            $ "Ignoring exception during skipped-job-handling"
+            :# ["exception" .= displayException ex]
 
 runRestylerImage
     :: MonadUnliftIO m

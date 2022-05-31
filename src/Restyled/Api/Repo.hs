@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Restyled.Api.Repo
     ( ApiRepo(..)
     ) where
@@ -21,14 +19,3 @@ data ApiRepo = ApiRepo
     }
     deriving stock Generic
     deriving anyclass FromJSON
-
-instance Display ApiRepo where
-    display ApiRepo { owner, name, isPrivate, installationId } =
-        display
-            $ untagName owner
-            <> "/"
-            <> untagName name
-            <> ", "
-            <> (if isPrivate then "private" else "public")
-            <> ", installationId:"
-            <> toPathPart installationId
