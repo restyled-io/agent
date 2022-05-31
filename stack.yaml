@@ -14,3 +14,6 @@ extra-deps:
   # https://github.com/hasura/monad-validate/pull/5
   - github: LeapYear/monad-validate
     commit: 5b181b7c57d6e2c975c533b0a0072e9aeb15fb99
+
+  # For weeder-2.3.0
+  - algebraic-graphs-0.5
