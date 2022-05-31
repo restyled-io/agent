@@ -6,7 +6,6 @@ extra-deps:
       - lib/amazonka
       - lib/amazonka-core
       - lib/services/amazonka-autoscaling
-      - lib/services/amazonka-ecs
       - lib/services/amazonka-sqs
       - lib/services/amazonka-sso
       - lib/services/amazonka-sts

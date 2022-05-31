@@ -4,11 +4,9 @@ module Restyled.Agent
     , shutdownAgent
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import qualified Control.Immortal as Immortal
-import RIO.Process
-import RIO.Text (pack)
 import Restyled.Agent.Options
 import Restyled.Agent.Queue
 import Restyled.Agent.Redis
@@ -25,9 +23,8 @@ data Thread = Thread
 
 bootAgent
     :: ( MonadUnliftIO m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
-       , HasProcessContext env
        , HasOptions env
        , HasRedis env
        )
@@ -38,44 +35,51 @@ bootAgent = do
 
 bootAgentThread
     :: ( MonadUnliftIO m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
-       , HasProcessContext env
        , HasOptions env
        , HasRedis env
        )
     => Natural
     -> m Thread
 bootAgentThread n = do
-    logInfoS label "creating"
+    logInfo "creating"
     thread <- Immortal.create
         $ \t -> Immortal.onUnexpectedFinish t logUnexpectedFinish loop
     pure $ Thread label thread
   where
     label = pack $ "restyle-" <> show n
 
+    loop
+        :: ( MonadUnliftIO m
+           , MonadLogger m
+           , MonadReader env m
+           , HasOptions env
+           , HasRedis env
+           )
+        => m ()
     loop = do
         mEvent <- awaitWebhook
-        traverse_ (processPullRequestEvent label) mEvent
+        traverse_ processPullRequestEvent mEvent
 
+    logUnexpectedFinish
+        :: (MonadLogger m, Exception ex) => Either ex () -> m ()
     logUnexpectedFinish = \case
-        Left ex -> logErrorS label $ "Unexpected finish: " <> displayShow ex
+        Left ex ->
+            logError $ "Unexpected finish: " <> pack (displayException ex)
         Right () -> pure ()
 
-shutdownAgent
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env) => Agent -> m ()
+shutdownAgent :: (MonadUnliftIO m, MonadLogger m) => Agent -> m ()
 shutdownAgent (Agent threads) = do
     as <- traverse shutdownAgentThread threads
     traverse_ wait as
 
 shutdownAgentThread
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env)
-    => Thread
-    -> m (Async ())
+    :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
 shutdownAgentThread Thread {..} = do
-    logInfoS tLabel "mortalizing"
+    logInfo "mortalizing"
     liftIO $ Immortal.mortalize tThread
 
     async $ do
         liftIO $ Immortal.wait tThread
-        logInfoS tLabel "done"
+        logInfo "done"

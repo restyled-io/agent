@@ -1,35 +1,41 @@
 module Restyled.Agent.AWS
-    ( HasAWS(..)
-    , discoverAWS
+    ( Env
+    , HasAWS(..)
+    , AWSRequest
+    , AWSResponse
+    , discover
     , send
+
+    -- * Re-export
     , MonadResource
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
+import Amazonka (AWSRequest, AWSResponse, Env)
 import qualified Amazonka as AWS
 import Conduit
 
 class HasAWS env where
-    awsEnvL :: Lens' env AWS.Env
+    awsEnvL :: Lens' env Env
 
-instance HasAWS AWS.Env where
+instance HasAWS Env where
     awsEnvL = id
 
-discoverAWS
+discover
     :: MonadIO m
     => Bool -- ^ Debug?
-    -> m AWS.Env
-discoverAWS debug = do
+    -> m Env
+discover debug = do
     let level = if debug then AWS.Debug else AWS.Info
     lgr <- AWS.newLogger level stdout
     env <- liftIO $ AWS.newEnv AWS.discover
     pure $ env { AWS.envLogger = lgr }
 
 send
-    :: (MonadResource m, MonadReader env m, HasAWS env, AWS.AWSRequest a)
+    :: (MonadResource m, MonadReader env m, HasAWS env, AWSRequest a)
     => a
-    -> m (AWS.AWSResponse a)
+    -> m (AWSResponse a)
 send req = do
     env <- view awsEnvL
     AWS.send env req

@@ -7,10 +7,8 @@ module Restyled.Api.Job
     , apiJobIdToText
     ) where
 
-import RIO hiding (id)
+import Restyled.Agent.Prelude
 
-import Data.Aeson
-import RIO.Text (pack)
 import Restyled.Agent.GitHub
 
 data ApiJob = ApiJob
@@ -26,7 +24,7 @@ data ApiJob = ApiJob
     deriving anyclass FromJSON
 
 instance Display ApiJob where
-    display job@ApiJob { url } = display (apiJobSpec job) <> " " <> display url
+    display job@ApiJob { url } = display $ apiJobSpec job <> " " <> url
 
 apiJobSpec :: ApiJob -> Text
 apiJobSpec ApiJob { owner, repo, pullRequest } =
@@ -36,9 +34,6 @@ newtype ApiJobId = ApiJobId
     { unApiJobId :: Int
     }
     deriving newtype FromJSON
-
-instance Display ApiJobId where
-    display = display . apiJobIdToText
 
 apiJobIdToText :: ApiJobId -> Text
 apiJobIdToText = pack . show . unApiJobId

@@ -4,12 +4,9 @@ module Restyled.Agent.AWS.LifecycleHooks
     , withTerminatingLifecycleHook
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import qualified Amazonka.AutoScaling.CompleteLifecycleAction as AWS
-import Control.Lens ((?~))
-import Data.Aeson
-import RIO.Text (unpack)
 import Restyled.Agent.AWS
 import Restyled.Agent.AWS.SQS.DecodedMessage
 import Restyled.Agent.Options
@@ -52,9 +49,9 @@ instance FromJSON LifecycleHookDetails where
 withPendingLifecycleHook
     :: ( MonadUnliftIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
        , HasOptions env
-       , HasLogFunc env
        , HasAWS env
        )
     => Text
@@ -65,9 +62,9 @@ withPendingLifecycleHook = withLifecycleHook InstanceLaunching
 withTerminatingLifecycleHook
     :: ( MonadUnliftIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
        , HasOptions env
-       , HasLogFunc env
        , HasAWS env
        )
     => Text
@@ -78,9 +75,9 @@ withTerminatingLifecycleHook = withLifecycleHook InstanceTerminating
 withLifecycleHook
     :: ( MonadUnliftIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
        , HasOptions env
-       , HasLogFunc env
        , HasAWS env
        )
     => LifecycleTransition
@@ -90,7 +87,7 @@ withLifecycleHook
 withLifecycleHook transition queue act = do
     Options {..} <- view optionsL
 
-    logInfo $ "Awaiting " <> display transition
+    logInfo $ "Awaiting " <> displayT transition
     decodedMessage <- awaitDecodedMessage queue $ predicate oInstance
 
     let
@@ -102,11 +99,8 @@ withLifecycleHook transition queue act = do
 
     case eResult of
         Left ex -> do
-            logError
-                $ "Error acting on "
-                <> display transition
-                <> ": "
-                <> displayShow ex
+            logError $ "Error acting on " <> displayT transition <> ": " <> pack
+                (displayException ex)
             Nothing <$ finalize ActionResultAbandon
         Right result -> Just result <$ finalize ActionResultContinue
   where
@@ -120,19 +114,16 @@ data LifecycleHookActionResult
 completeLifecycleAction
     :: ( MonadIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
        , HasAWS env
        )
     => LifecycleHookDetails
     -> LifecycleHookActionResult
     -> m ()
 completeLifecycleAction LifecycleHookDetails {..} action = do
-    logInfo
-        $ "Completing "
-        <> display lhdTransition
-        <> " with "
-        <> displayShow result
+    logInfo $ "Completing " <> displayT lhdTransition <> " with " <> pack
+        (show result)
     resp <-
         send
         $ AWS.newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
@@ -140,8 +131,8 @@ completeLifecycleAction LifecycleHookDetails {..} action = do
         & (AWS.completeLifecycleAction_lifecycleActionToken
           ?~ lhdLifecycleActionToken
           )
-    logDebug $ "Status: " <> displayShow
-        (resp ^. AWS.completeLifecycleActionResponse_httpStatus)
+    logDebug $ "Status: " <> pack
+        (show $ resp ^. AWS.completeLifecycleActionResponse_httpStatus)
   where
     result = case action of
         ActionResultContinue -> "CONTINUE"

@@ -45,19 +45,6 @@ packages:
     url: https://github.com/brendanhay/amazonka/archive/f73a957d05f64863e867cf39d0db260718f0fadd.tar.gz
 - completed:
     size: 27775608
-    subdir: lib/services/amazonka-ecs
-    url: https://github.com/brendanhay/amazonka/archive/f73a957d05f64863e867cf39d0db260718f0fadd.tar.gz
-    name: amazonka-ecs
-    version: '2.0'
-    sha256: 14aeaa9f748f7ac03683e8a8126760ed16aa82152404a96c0333b582444cd381
-    pantry-tree:
-      size: 23534
-      sha256: dde2e3f64a4b08454cc6777c07694a7aaf9a88cd9ebe7c16968f730caea3b294
-  original:
-    subdir: lib/services/amazonka-ecs
-    url: https://github.com/brendanhay/amazonka/archive/f73a957d05f64863e867cf39d0db260718f0fadd.tar.gz
-- completed:
-    size: 27775608
     subdir: lib/services/amazonka-sqs
     url: https://github.com/brendanhay/amazonka/archive/f73a957d05f64863e867cf39d0db260718f0fadd.tar.gz
     name: amazonka-sqs

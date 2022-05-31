@@ -4,7 +4,7 @@ module Restyled.Agent.Options
     , parseOptions
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import qualified Restyled.Agent.GitHub as GitHub
 import Restyled.Agent.Options.CLI

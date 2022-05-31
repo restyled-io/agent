@@ -2,7 +2,7 @@ module Main
     ( main
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import Restyled.Agent
 import Restyled.Agent.AWS.LifecycleHooks
@@ -32,7 +32,7 @@ main = do
                     Just (Just (Left ())) ->
                         logError
                             $ "Agent shutdown timed out after "
-                            <> displayShow m
+                            <> pack (show m)
                             <> " minute(s)"
                     Just (Just (Right ())) -> logInfo "Agent shutdown complete"
 

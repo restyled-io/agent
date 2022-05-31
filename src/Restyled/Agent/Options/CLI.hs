@@ -3,7 +3,7 @@ module Restyled.Agent.Options.CLI
     , parseCLI
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import Options.Applicative
 
