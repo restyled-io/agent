@@ -51,6 +51,7 @@ library:
     - conduit
     - conduit-extra
     - envparse
+    - exceptions
     - github
     - hedis
     - http-conduit

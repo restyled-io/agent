@@ -23,6 +23,7 @@ data Thread = Thread
 
 bootAgent
     :: ( MonadUnliftIO m
+       , MonadMask m
        , MonadLogger m
        , MonadReader env m
        , HasOptions env
@@ -35,6 +36,7 @@ bootAgent = do
 
 bootAgentThread
     :: ( MonadUnliftIO m
+       , MonadMask m
        , MonadLogger m
        , MonadReader env m
        , HasOptions env
@@ -42,23 +44,25 @@ bootAgentThread
        )
     => Natural
     -> m Thread
-bootAgentThread n = do
+bootAgentThread n = withThreadContext context $ do
     logInfo "creating"
     thread <- Immortal.create
         $ \t -> Immortal.onUnexpectedFinish t logUnexpectedFinish loop
     pure $ Thread label thread
   where
     label = pack $ "restyle-" <> show n
+    context = ["thread" .= label]
 
     loop
         :: ( MonadUnliftIO m
+           , MonadMask m
            , MonadLogger m
            , MonadReader env m
            , HasOptions env
            , HasRedis env
            )
         => m ()
-    loop = do
+    loop = withThreadContext context $ do
         mEvent <- awaitWebhook
         traverse_ processPullRequestEvent mEvent
 
@@ -79,9 +83,9 @@ shutdownAgent (Agent threads) = do
 shutdownAgentThread
     :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
 shutdownAgentThread Thread {..} = do
-    logInfo "mortalizing"
+    logInfo $ "mortalizing" :# ["thread" .= tLabel]
     liftIO $ Immortal.mortalize tThread
 
     async $ do
         liftIO $ Immortal.wait tThread
-        logInfo "done"
+        logInfo $ "done" :# ["thread" .= tLabel]
