@@ -21,11 +21,11 @@ awaitWebhook = do
     eresult <- runRedis $ brpop [queueName] webhookTimeout
 
     case over _2 eitherDecodeStrict <$$> eresult of
-        Left err ->
-            Nothing <$ logWarn ("Error Reply from Redis: " <> pack (show err))
+        Left err -> Nothing
+            <$ logWarn ("Error Reply from Redis" :# ["body" .= show err])
         Right Nothing -> pure Nothing
         Right (Just (_, Left err)) ->
-            Nothing <$ logWarn ("Unexpected JSON: " <> pack err)
+            Nothing <$ logWarn ("Unexpected JSON" :# ["message" .= err])
         Right (Just (_, Right event)) -> pure $ Just event
 
 -- | How long to wait for brpop before getting 'Nothing' and looping

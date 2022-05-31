@@ -16,10 +16,10 @@ data LifecycleTransition
     | InstanceTerminating
     deriving stock (Eq, Show)
 
-instance Display LifecycleTransition where
-    display = \case
-        InstanceLaunching -> "LAUNCHING"
-        InstanceTerminating -> "TERMINATING"
+instance ToJSON LifecycleTransition where
+    toJSON = \case
+        InstanceLaunching -> String "LAUNCHING"
+        InstanceTerminating -> String "TERMINATING"
 
 instance FromJSON LifecycleTransition where
     parseJSON = withText "LifecycleTransition" $ \case
@@ -87,7 +87,7 @@ withLifecycleHook
 withLifecycleHook transition queue act = do
     Options {..} <- view optionsL
 
-    logInfo $ "Awaiting " <> displayT transition
+    logInfo $ "Awaiting" :# ["transition" .= transition]
     decodedMessage <- awaitDecodedMessage queue $ predicate oInstance
 
     let
@@ -99,8 +99,11 @@ withLifecycleHook transition queue act = do
 
     case eResult of
         Left ex -> do
-            logError $ "Error acting on " <> displayT transition <> ": " <> pack
-                (displayException ex)
+            logError
+                $ "Error"
+                :# [ "transition" .= transition
+                   , "exception" .= displayException ex
+                   ]
             Nothing <$ finalize ActionResultAbandon
         Right result -> Just result <$ finalize ActionResultContinue
   where
@@ -122,8 +125,9 @@ completeLifecycleAction
     -> LifecycleHookActionResult
     -> m ()
 completeLifecycleAction LifecycleHookDetails {..} action = do
-    logInfo $ "Completing " <> displayT lhdTransition <> " with " <> pack
-        (show result)
+    logInfo
+        $ "Completing"
+        :# ["transition" .= lhdTransition, "result" .= result]
     resp <-
         send
         $ AWS.newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
@@ -131,8 +135,11 @@ completeLifecycleAction LifecycleHookDetails {..} action = do
         & (AWS.completeLifecycleAction_lifecycleActionToken
           ?~ lhdLifecycleActionToken
           )
-    logDebug $ "Status: " <> pack
-        (show $ resp ^. AWS.completeLifecycleActionResponse_httpStatus)
+    logDebug
+        $ "Response"
+        :# [ "status" .= show
+                 (resp ^. AWS.completeLifecycleActionResponse_httpStatus)
+           ]
   where
     result = case action of
         ActionResultContinue -> "CONTINUE"

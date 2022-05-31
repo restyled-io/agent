@@ -36,18 +36,21 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
     case emDecodedMessage of
         Nothing -> Nothing <$ logDebug "No messages"
         Just (Left err) -> do
-            logDebug $ "Message did not parse: " <> fromString err
+            logDebug $ "Message did not parse: " :# ["error" .= err]
             pure Nothing
         Just (Right decodedMessage) | predicate (dmBody decodedMessage) ->
             pure $ Just decodedMessage
         Just (Right decodedMessage) -> do
-            logDebug $ "Message was not expected: " <> pack
-                (show $ dmBody decodedMessage)
+            logDebug
+                $ "Message was not expected"
+                :# ["body" .= show (dmBody decodedMessage)]
             pure Nothing
   where
     onErr :: (MonadLogger m, Exception e) => e -> m (Maybe a)
     onErr ex = Nothing <$ logError
-        ("Exception awaiting SQS Message: " <> pack (displayException ex))
+        ("Exception awaiting SQS Message"
+        :# ["exception" .= displayException ex]
+        )
 
 receiveDecodedMessage
     :: ( MonadIO m
@@ -65,7 +68,7 @@ receiveDecodedMessage queueUrl = do
         $ AWS.newReceiveMessage queueUrl
         & (AWS.receiveMessage_maxNumberOfMessages ?~ 1)
         & (AWS.receiveMessage_waitTimeSeconds ?~ 20)
-    logDebug $ "Response: " <> pack (show resp)
+    logDebug $ "Response" :# ["body" .= show resp]
 
     pure $ do
         guard $ resp ^. AWS.receiveMessageResponse_httpStatus == 200
@@ -90,7 +93,7 @@ deleteDecodedMessage
 deleteDecodedMessage DecodedMessage {..} = do
     let req = AWS.newDeleteMessage dmQueueUrl dmReceiptHandle
     resp <- send req
-    logDebug $ "Response: " <> pack (show resp)
+    logDebug $ "Response" :# ["body" .= show resp]
 
 -- | Keep running an operation until it becomes a 'Just', then return the value
 --   inside the 'Just' as the result of the overall loop.

@@ -40,12 +40,12 @@ instance FromJSON PullRequestEvent where
 
     parseJSON v = typeMismatch "PullRequestEvent" v
 
---         pure $ Webhook
---             { webhookOwnerName = simpleOwnerLogin repoOwner
---             , webhookRepoName = repoName
---             , webhookInstallationId = installationId installation
---             , webhookRepoIsPrivate = repoPrivate
---             , webhookPullRequest = pullRequestNumber
---             , webhookAction = pullRequestEventAction event
---             , webhookAuthor = untagName $ simpleUserLogin pullRequestUser
---             }
+instance ToJSON PullRequestEvent where
+    toJSON PullRequestEvent {..} = object
+        [ "action" .= show pullRequestEventAction
+        , "number" .= pullRequestEventNumber
+        -- , "pull_request" .= pullRequestEventPullRequest
+        -- , "repository" .= pullRequestRepository
+        -- , "sender" .= pullRequestSender
+        , "installation" .= pullRequestInstallation
+        ]

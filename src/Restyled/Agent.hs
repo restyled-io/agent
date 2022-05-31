@@ -66,7 +66,9 @@ bootAgentThread n = do
         :: (MonadLogger m, Exception ex) => Either ex () -> m ()
     logUnexpectedFinish = \case
         Left ex ->
-            logError $ "Unexpected finish: " <> pack (displayException ex)
+            logError
+                $ "Unexpected finish"
+                :# ["exception" .= displayException ex]
         Right () -> pure ()
 
 shutdownAgent :: (MonadUnliftIO m, MonadLogger m) => Agent -> m ()

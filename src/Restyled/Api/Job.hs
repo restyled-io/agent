@@ -21,10 +21,7 @@ data ApiJob = ApiJob
     , awsLogStream :: Text
     }
     deriving stock Generic
-    deriving anyclass FromJSON
-
-instance Display ApiJob where
-    display job@ApiJob { url } = display $ apiJobSpec job <> " " <> url
+    deriving anyclass (FromJSON, ToJSON)
 
 apiJobSpec :: ApiJob -> Text
 apiJobSpec ApiJob { owner, repo, pullRequest } =
@@ -33,7 +30,7 @@ apiJobSpec ApiJob { owner, repo, pullRequest } =
 newtype ApiJobId = ApiJobId
     { unApiJobId :: Int
     }
-    deriving newtype FromJSON
+    deriving newtype (FromJSON, ToJSON)
 
 apiJobIdToText :: ApiJobId -> Text
 apiJobIdToText = pack . show . unApiJobId

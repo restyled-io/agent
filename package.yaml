@@ -57,7 +57,7 @@ library:
     - http-types
     - immortal
     - lens
-    - monad-logger
+    - monad-logger-aeson
     - monad-validate
     - optparse-applicative
     - resourcet
