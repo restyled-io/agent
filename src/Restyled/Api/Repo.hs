@@ -4,9 +4,8 @@ module Restyled.Api.Repo
     ( ApiRepo(..)
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
-import Data.Aeson
 import Restyled.Agent.GitHub
 import Restyled.Api.MarketplacePlanAllows
 
@@ -25,10 +24,11 @@ data ApiRepo = ApiRepo
 
 instance Display ApiRepo where
     display ApiRepo { owner, name, isPrivate, installationId } =
-        display (untagName owner)
+        display
+            $ untagName owner
             <> "/"
-            <> display (untagName name)
+            <> untagName name
             <> ", "
             <> (if isPrivate then "private" else "public")
             <> ", installationId:"
-            <> display (toPathPart installationId)
+            <> toPathPart installationId

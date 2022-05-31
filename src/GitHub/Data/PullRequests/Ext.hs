@@ -4,7 +4,7 @@ module GitHub.Data.PullRequests.Ext
     , module GitHub.Data.PullRequests
     ) where
 
-import RIO
+import Prelude
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)

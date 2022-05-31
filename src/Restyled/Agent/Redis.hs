@@ -20,9 +20,8 @@ module Restyled.Agent.Redis
     , encodeStrict
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
-import Data.Aeson (ToJSON, encode)
 import Data.ByteString.Lazy (toStrict)
 import Database.Redis
     ( ConnectInfo

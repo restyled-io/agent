@@ -2,11 +2,10 @@ module Restyled.Agent.Process
     ( runProcessDevNull
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import Conduit
 import Data.Conduit.Process.Typed (createSource)
-import RIO.Process
 
 runProcessDevNull
     :: MonadUnliftIO m => ProcessConfig stdin stdout stderr -> m ExitCode
@@ -18,4 +17,5 @@ runProcessDevNull pc = withUnliftIO $ \u -> do
         b <- async $ unliftIO u $ drain $ getStderr p
         wait a *> wait b *> waitExitCode p
   where
+    drain :: MonadUnliftIO m => ConduitT () ByteString (ResourceT m) () -> m ()
     drain source = runResourceT $ runConduit $ source .| sinkFile "/dev/null"

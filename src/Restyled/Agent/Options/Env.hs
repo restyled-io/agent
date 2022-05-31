@@ -3,7 +3,7 @@ module Restyled.Agent.Options.Env
     , parseEnv
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import Env
 import qualified Restyled.Agent.GitHub as GitHub

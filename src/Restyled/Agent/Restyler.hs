@@ -2,14 +2,10 @@ module Restyled.Agent.Restyler
     ( processPullRequestEvent
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import Control.Monad.Validate
-import qualified RIO.NonEmpty as NE
-import RIO.Process
-import RIO.Text (pack, unpack)
-import qualified RIO.Text as T
-import RIO.Time
+import qualified Data.Text as T
 import Restyled.Agent.GitHub
 import Restyled.Agent.Options
 import Restyled.Agent.Process
@@ -21,20 +17,14 @@ import Restyled.Api.Repo (ApiRepo)
 import qualified Restyled.Api.Repo as ApiRepo
 
 processPullRequestEvent
-    :: ( MonadUnliftIO m
-       , MonadReader env m
-       , HasLogFunc env
-       , HasOptions env
-       , HasProcessContext env
-       )
-    => LogSource
-    -> PullRequestEvent
+    :: (MonadUnliftIO m, MonadLogger m, MonadReader env m, HasOptions env)
+    => PullRequestEvent
     -> m ()
-processPullRequestEvent source event
+processPullRequestEvent event
     | not $ pullRequestEventIsInteresting event
-    = logDebugS source
+    = logDebug
         $ "Ignoring "
-        <> displayShow (pullRequestEventAction event)
+        <> pack (show $ pullRequestEventAction event)
         <> " PR Event"
     | otherwise
     = do
@@ -46,11 +36,8 @@ processPullRequestEvent source event
         job <- Api.createJob repo pullRequest
         result <- runValidateT $ validatePullRequestEvent repo event
 
-        logInfoS source
-            $ "Job "
-            <> display job
-            <> " validated, result="
-            <> displayShow result
+        logInfo $ "Job " <> displayT job <> " validated, result=" <> pack
+            (show result)
 
         start <- liftIO getCurrentTime
         exitCode <- case result of
@@ -58,24 +45,19 @@ processPullRequestEvent source event
             Right () -> dockerRunJob repo job
 
         finish <- liftIO getCurrentTime
-        logInfoS source
+        logInfo
             $ "Job "
-            <> display job
+            <> displayT job
             <> " complete, exitCode="
-            <> displayShow exitCode
+            <> pack (show exitCode)
             <> ", duration="
-            <> displayShow (diffUTCTime finish start)
+            <> pack (show $ diffUTCTime finish start)
 
         void $ Api.completeJob (ApiJob.id job) exitCode
     where pullRequest = pullRequestNumber $ pullRequestEventPullRequest event
 
 dockerRunJob
-    :: ( MonadUnliftIO m
-       , MonadReader env m
-       , HasLogFunc env
-       , HasOptions env
-       , HasProcessContext env
-       )
+    :: (MonadUnliftIO m, MonadLogger m, MonadReader env m, HasOptions env)
     => ApiRepo
     -> ApiJob
     -> m ExitCode
@@ -98,33 +80,25 @@ dockerRunJob repo job = handleAny (exceptionHandler repo job) $ do
         )
         ["--job-url", ApiJob.url job, apiJobSpec job]
   where
+    optionalEnv :: Text -> Maybe Text -> [Text]
     optionalEnv name = \case
         Nothing -> []
         Just x -> ["--env", name <> "=" <> x]
 
 exceptionHandler
-    :: ( MonadUnliftIO m
-       , MonadReader env m
-       , HasOptions env
-       , HasLogFunc env
-       , HasProcessContext env
-       )
+    :: (MonadUnliftIO m, MonadLogger m)
     => ApiRepo
     -> ApiJob
     -> SomeException
     -> m ExitCode
 exceptionHandler repo job ex = do
-    logError $ "Exception running Job: " <> displayShow ex
-    let messages = pure "Unexpected error running Job"
+    logError $ "Exception running Job: " <> pack (displayException ex)
+    let messages :: NonEmpty Text
+        messages = pure "Unexpected error running Job"
     ExitFailure 99 <$ dockerRunSkippedJob repo job messages
 
 dockerRunSkippedJob
-    :: ( MonadUnliftIO m
-       , MonadReader env m
-       , HasOptions env
-       , HasLogFunc env
-       , HasProcessContext env
-       )
+    :: (MonadUnliftIO m, MonadLogger m)
     => ApiRepo
     -> ApiJob
     -> NonEmpty Text
@@ -139,25 +113,22 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
         ["--width", "72", "--spaces", pack tmp]
     pure ExitSuccess
   where
-    formatMessages = T.intercalate "\n\n" . NE.toList
+    formatMessages :: NonEmpty Text -> Text
+    formatMessages = T.intercalate "\n\n" . toList
+
+    warn :: (MonadLogger m, Exception ex) => ex -> m ()
     warn ex =
-        logWarn
-            $ "Ignoring exception during skipped-job-handling: "
-            <> displayShow ex
+        logWarn $ "Ignoring exception during skipped-job-handling: " <> pack
+            (displayException ex)
 
 runRestylerImage
-    :: ( MonadUnliftIO m
-       , MonadReader env m
-       , HasOptions env
-       , HasLogFunc env
-       , HasProcessContext env
-       )
+    :: MonadUnliftIO m
     => ApiRepo
     -> ApiJob
     -> [Text] -- ^ Arguments for docker-run
     -> [Text] -- ^ Arguments for restyled
     -> m ExitCode
-runRestylerImage repo job dockerArgs restylerArgs = proc
+runRestylerImage repo job dockerArgs restylerArgs = runProcessDevNull $ proc
     "docker"
     (map unpack $ mconcat
         [ ["run", "--rm"]
@@ -174,7 +145,6 @@ runRestylerImage repo job dockerArgs restylerArgs = proc
         , restylerArgs
         ]
     )
-    runProcessDevNull
 
 validatePullRequestEvent
     :: MonadValidate (NonEmpty Text) m => ApiRepo -> PullRequestEvent -> m ()
@@ -188,14 +158,18 @@ validateAgainstPullBot
     :: MonadValidate (NonEmpty Text) m => PullRequestEvent -> m ()
 validateAgainstPullBot event = refuteWhen messages $ author == "pull[bot]"
   where
+    messages :: NonEmpty Text
     messages = pure "Ignoring pull[bot] Pull Request"
+
     author = pullRequestEventAuthor event
 
 validateAgainstSelf
     :: MonadValidate (NonEmpty Text) m => PullRequestEvent -> m ()
 validateAgainstSelf event = refuteWhen messages $ isRestyledBot author
   where
+    messages :: NonEmpty Text
     messages = pure "Ignoring Restyled Pull Request"
+
     author = pullRequestEventAuthor event
     isRestyledBot =
         (&&) <$> ("restyled-io" `T.isPrefixOf`) <*> ("[bot]" `T.isSuffixOf`)

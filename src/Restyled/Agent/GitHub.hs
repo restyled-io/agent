@@ -20,7 +20,7 @@ module Restyled.Agent.GitHub
     , untagName
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import GitHub.Auth.JWT
 import GitHub.Data hiding (PullRequestEvent(..))

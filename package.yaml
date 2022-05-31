@@ -4,8 +4,14 @@ license: MIT
 
 dependencies:
   - base
-  - rio
-  - rio-orphans
+
+ghc-options:
+  - -Weverything
+  - -Wno-missing-exported-signatures # re-enables missing-signatures
+  - -Wno-missing-import-lists
+  - -Wno-missing-safe-haskell-mode
+  - -Wno-prepositive-qualified-module
+  - -Wno-unsafe
 
 default-extensions:
   - BangPatterns
@@ -37,16 +43,13 @@ library:
   source-dirs: src
   dependencies:
     - aeson
-    - aeson-casing
     - amazonka
     - amazonka-autoscaling
-    - amazonka-ecs
     - amazonka-sqs
     - bytestring
     - composition-extra
     - conduit
     - conduit-extra
-    - datadog
     - envparse
     - github
     - hedis
@@ -54,12 +57,12 @@ library:
     - http-types
     - immortal
     - lens
-    - lens-aeson
-    - load-env
-    - optparse-applicative
+    - monad-logger
     - monad-validate
-    - parsec
-    - random
+    - optparse-applicative
+    - resourcet
+    - rio
+    - typed-process
 
     # For GitHub extension modules
     - jwt

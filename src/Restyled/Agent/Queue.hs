@@ -2,18 +2,15 @@ module Restyled.Agent.Queue
     ( awaitWebhook
     ) where
 
-import RIO hiding (timeout)
+import Restyled.Agent.Prelude
 
-import Control.Lens (_2)
-import Data.Aeson
-import Data.Functor.Syntax ((<$$>))
 import Restyled.Agent.Options
 import Restyled.Agent.Redis
 
 awaitWebhook
     :: ( MonadIO m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
        , HasOptions env
        , HasRedis env
        , FromJSON a
@@ -25,10 +22,10 @@ awaitWebhook = do
 
     case over _2 eitherDecodeStrict <$$> eresult of
         Left err ->
-            Nothing <$ logWarn ("Error Reply from Redis: " <> displayShow err)
+            Nothing <$ logWarn ("Error Reply from Redis: " <> pack (show err))
         Right Nothing -> pure Nothing
         Right (Just (_, Left err)) ->
-            Nothing <$ logWarn ("Unexpected JSON: " <> fromString err)
+            Nothing <$ logWarn ("Unexpected JSON: " <> pack err)
         Right (Just (_, Right event)) -> pure $ Just event
 
 -- | How long to wait for brpop before getting 'Nothing' and looping

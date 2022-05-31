@@ -5,14 +5,11 @@ module Restyled.Agent.AWS.SQS.DecodedMessage
     , deleteDecodedMessage
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
 import qualified Amazonka.SQS.DeleteMessage as AWS
 import qualified Amazonka.SQS.ReceiveMessage as AWS
 import qualified Amazonka.SQS.Types as AWS
-import Control.Lens ((?~))
-import Data.Aeson
-import qualified RIO.ByteString.Lazy as BSL
 import Restyled.Agent.AWS
 
 data DecodedMessage a = DecodedMessage
@@ -24,8 +21,8 @@ data DecodedMessage a = DecodedMessage
 awaitDecodedMessage
     :: ( MonadUnliftIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
        , HasAWS env
        , FromJSON a
        , Show a
@@ -44,18 +41,19 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
         Just (Right decodedMessage) | predicate (dmBody decodedMessage) ->
             pure $ Just decodedMessage
         Just (Right decodedMessage) -> do
-            logDebug $ "Message was not expected: " <> displayShow
-                (dmBody decodedMessage)
+            logDebug $ "Message was not expected: " <> pack
+                (show $ dmBody decodedMessage)
             pure Nothing
   where
-    onErr ex =
-        Nothing <$ logError ("Exception awaiting SQS Message: " <> display ex)
+    onErr :: (MonadLogger m, Exception e) => e -> m (Maybe a)
+    onErr ex = Nothing <$ logError
+        ("Exception awaiting SQS Message: " <> pack (displayException ex))
 
 receiveDecodedMessage
     :: ( MonadIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
        , HasAWS env
        , FromJSON a
        )
@@ -67,7 +65,7 @@ receiveDecodedMessage queueUrl = do
         $ AWS.newReceiveMessage queueUrl
         & (AWS.receiveMessage_maxNumberOfMessages ?~ 1)
         & (AWS.receiveMessage_waitTimeSeconds ?~ 20)
-    logDebug $ "Response: " <> displayShow resp
+    logDebug $ "Response: " <> pack (show resp)
 
     pure $ do
         guard $ resp ^. AWS.receiveMessageResponse_httpStatus == 200
@@ -77,14 +75,14 @@ receiveDecodedMessage queueUrl = do
         recieptHandle <- msg ^. AWS.message_receiptHandle
         pure $ decodedMessage body recieptHandle
   where
-    decodedMessage body recieptHandle = DecodedMessage queueUrl recieptHandle
-        <$> eitherDecode (BSL.fromStrict $ encodeUtf8 body)
+    decodedMessage body recieptHandle =
+        DecodedMessage queueUrl recieptHandle <$> eitherDecodeText body
 
 deleteDecodedMessage
     :: ( MonadIO m
        , MonadResource m
+       , MonadLogger m
        , MonadReader env m
-       , HasLogFunc env
        , HasAWS env
        )
     => DecodedMessage a
@@ -92,7 +90,7 @@ deleteDecodedMessage
 deleteDecodedMessage DecodedMessage {..} = do
     let req = AWS.newDeleteMessage dmQueueUrl dmReceiptHandle
     resp <- send req
-    logDebug ("Response: " <> displayShow resp)
+    logDebug $ "Response: " <> pack (show resp)
 
 -- | Keep running an operation until it becomes a 'Just', then return the value
 --   inside the 'Just' as the result of the overall loop.

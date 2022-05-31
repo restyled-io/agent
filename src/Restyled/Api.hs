@@ -7,13 +7,10 @@ module Restyled.Api
     , completeJob
     ) where
 
-import RIO
+import Restyled.Agent.Prelude
 
-import Data.Aeson
 import Network.HTTP.Simple
 import Network.HTTP.Types (hAuthorization)
-import RIO.Text (unpack)
-import RIO.Time (UTCTime, getCurrentTime)
 import Restyled.Agent.GitHub
 import Restyled.Agent.Options
 import Restyled.Api.Job
