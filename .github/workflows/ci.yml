@@ -13,6 +13,8 @@ jobs:
       - uses: freckle/stack-cache-action@v2
       - uses: freckle/stack-action@v3
       - uses: freckle/weeder-action@v1
+        with:
+          weeder-version: 2.3.0
 
   lint:
     runs-on: ubuntu-latest

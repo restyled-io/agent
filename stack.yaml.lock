@@ -106,6 +106,13 @@ packages:
       sha256: 2520040223ec05c14da5f1d2ac7a38e5ed2caf0ec307bce4566924da54c28166
   original:
     url: https://github.com/LeapYear/monad-validate/archive/5b181b7c57d6e2c975c533b0a0072e9aeb15fb99.tar.gz
+- completed:
+    hackage: algebraic-graphs-0.5@sha256:6eeec5ed1687ff7aa916e7bf9f02f51aaabde6f314dc0b7b1a84156974d7da73,8071
+    pantry-tree:
+      size: 4128
+      sha256: cca4a0348bb126506cacd8436948a68aad62e75d45df8c71f4090a00e69b45ee
+  original:
+    hackage: algebraic-graphs-0.5
 snapshots:
 - completed:
     size: 618506
