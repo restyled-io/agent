@@ -7,6 +7,9 @@ module Restyled.Agent
 import Restyled.Agent.Prelude
 
 import qualified Control.Immortal as Immortal
+import Data.Aeson.KeyMap (KeyMap)
+import qualified Data.Aeson.KeyMap as KeyMap
+import Data.Aeson.Types (Pair)
 import Restyled.Agent.Options
 import Restyled.Agent.Queue
 import Restyled.Agent.Redis
@@ -46,8 +49,12 @@ bootAgentThread
     -> m Thread
 bootAgentThread n = withThreadContext context $ do
     logInfo "creating"
-    thread <- Immortal.create
-        $ \t -> Immortal.onUnexpectedFinish t logUnexpectedFinish loop
+
+    threadContext <- extendThreadContext context <$> myThreadContext
+    thread <- Immortal.create $ \t -> Immortal.onUnexpectedFinish
+        t
+        (withThreadContext threadContext . logUnexpectedFinish)
+        (withThreadContext threadContext loop)
     pure $ Thread label thread
   where
     label = pack $ "restyle-" <> show n
@@ -55,14 +62,13 @@ bootAgentThread n = withThreadContext context $ do
 
     loop
         :: ( MonadUnliftIO m
-           , MonadMask m
            , MonadLogger m
            , MonadReader env m
            , HasOptions env
            , HasRedis env
            )
         => m ()
-    loop = withThreadContext context $ do
+    loop = do
         mEvent <- awaitWebhook
         traverse_ processPullRequestEvent mEvent
 
@@ -74,6 +80,9 @@ bootAgentThread n = withThreadContext context $ do
                 $ "Unexpected finish"
                 :# ["exception" .= displayException ex]
         Right () -> pure ()
+
+extendThreadContext :: [Pair] -> KeyMap Value -> [Pair]
+extendThreadContext ps = KeyMap.toList . KeyMap.union (KeyMap.fromList ps)
 
 shutdownAgent :: (MonadUnliftIO m, MonadLogger m) => Agent -> m ()
 shutdownAgent (Agent threads) = do
