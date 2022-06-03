@@ -42,4 +42,4 @@ RUN \
 COPY --from=builder /root/.local/bin/agent /bin/agent
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/docker
 ENTRYPOINT ["/bin/agent"]
-CMD ["--help"]
+CMD []
