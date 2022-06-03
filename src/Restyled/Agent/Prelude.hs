@@ -22,9 +22,9 @@ import RIO as X hiding
 
 import Control.Lens as X (_1, _2, (?~))
 import Control.Monad.Catch as X (MonadMask)
-import Control.Monad.Logger.Aeson as X
 import Data.Aeson as X hiding (Options)
 import Data.Functor.Syntax as X ((<$$>))
+import Logging as X
 import RIO.Text as X (pack, unpack)
 import RIO.Time as X (UTCTime, diffUTCTime, getCurrentTime)
 import System.Process.Typed as X

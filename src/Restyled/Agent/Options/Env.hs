@@ -6,6 +6,7 @@ module Restyled.Agent.Options.Env
 import Restyled.Agent.Prelude
 
 import Env
+import qualified Logging.Settings.Env as LoggingEnv
 import qualified Restyled.Agent.GitHub as GitHub
 import qualified Restyled.Agent.Redis as Redis
 
@@ -16,6 +17,7 @@ data OptionsEnv = OptionsEnv
     , oRestyledToken :: Text
     , oInstance :: Text
     , oLifecycleQueueUrl :: Maybe Text
+    , oLoggerSettings :: LogSettings
     , oStatsdHost :: Maybe String
     , oStatsdPort :: Maybe Int
     , oRedisConnectInfo :: Redis.ConnectInfo
@@ -34,6 +36,7 @@ parseEnv = Env.parse (header "Run a RestyleMachine Agent") $ OptionsEnv
     <*> var (str <=< nonempty) "RESTYLED_TOKEN" (help "Restyled API token")
     <*> var (str <=< nonempty) "INSTANCE_ID" (help "EC2 Instance Id" <> def "local")
     <*> optional (var (str <=< nonempty) "LIFECYCLE_HOOKS_URL" (help "URL for EC2 Instance Lifecycle Hooks"))
+    <*> LoggingEnv.parser
     <*> optional (var (str <=< nonempty) "STATSD_HOST" (help "StatsD host"))
     <*> optional (var auto "STATSD_PORT" (help "StatsD port"))
     <*> var (eith Redis.parseConnectInfo) "REDIS_URL" (help "Redis URL" <> def Redis.defaultConnectInfo)

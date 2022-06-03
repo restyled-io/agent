@@ -119,6 +119,7 @@ docker run \
   --env RESTYLED_TOKEN \
   --env INSTANCE_ID \
   --env LIFECYCLE_HOOKS_URL \
+  --env LOG_FORMAT=json \
   --env STATSD_HOST=dd-agent \
   --env REDIS_URL \
   --env RESTYLER_QUEUE_NAME \

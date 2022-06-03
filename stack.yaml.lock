@@ -94,6 +94,17 @@ packages:
   original:
     url: https://github.com/LeapYear/monad-validate/archive/5b181b7c57d6e2c975c533b0a0072e9aeb15fb99.tar.gz
 - completed:
+    size: 131986
+    url: https://github.com/freckle/logging/archive/e4f039f30f470d51497be886d342d58d24ae0045.tar.gz
+    name: logging
+    version: 0.0.0.0
+    sha256: 0c6b255ff96a9773e8e3f38913a81edf14a2bdd031af27ecb94f9cebcc700169
+    pantry-tree:
+      size: 1790
+      sha256: da723122f05c1565adced3671433fb1918f20a3c80534cde810da786e8b81fce
+  original:
+    url: https://github.com/freckle/logging/archive/e4f039f30f470d51497be886d342d58d24ae0045.tar.gz
+- completed:
     hackage: monad-logger-aeson-0.2.0.0@sha256:c855d721e74608b94b68b5d94ce30bbb49f535d92ae534c8b4c8cb9bb56524f5,5158
     pantry-tree:
       size: 5103

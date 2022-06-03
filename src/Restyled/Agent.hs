@@ -7,6 +7,7 @@ module Restyled.Agent
 import Restyled.Agent.Prelude
 
 import qualified Control.Immortal as Immortal
+import Control.Monad.Logger.Aeson (myThreadContext)
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KeyMap
 import Data.Aeson.Types (Pair)

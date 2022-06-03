@@ -18,8 +18,7 @@ data Options = Options
     , oRestyledToken :: Text
     , oInstance :: Text
     , oLifecycleQueueUrl :: Maybe Text
-    , oDebug :: Bool
-    , oTrace :: Bool
+    , oLoggerSettings :: LogSettings
     , oNet :: Maybe Text
     , oStatsdHost :: Maybe String
     , oStatsdPort :: Maybe Int
@@ -28,7 +27,6 @@ data Options = Options
     , oRestylerPoolSize :: Natural
     , oShutdownTimeoutMinutes :: Natural
     }
-    deriving stock Show
 
 class HasOptions env where
     optionsL :: Lens' env Options

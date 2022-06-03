@@ -14,12 +14,16 @@ import qualified Restyled.Agent.Redis as Redis
 
 data App = App
     { appOptions :: Options
+    , appLogger :: Logger
     , appAWS :: AWS.Env
     , appRedisConn :: Redis.Connection
     }
 
 instance HasOptions App where
     optionsL = lens appOptions $ \x y -> x { appOptions = y }
+
+instance HasLogger App where
+    loggerL = lens appLogger $ \x y -> x { appLogger = y }
 
 instance HasAWS App where
     awsEnvL = lens appAWS $ \x y -> x { appAWS = y }
@@ -29,18 +33,13 @@ instance HasRedis App where
 
 withApp :: Options -> ReaderT App (LoggingT (ResourceT IO)) a -> IO a
 withApp opts@Options {..} action = do
-    app <- App opts <$> AWS.discover oTrace <*> liftIO
+    logger <- newLogger oLoggerSettings
+    app <- App opts logger <$> runLoggerLoggingT logger AWS.discover <*> liftIO
         (Redis.checkedConnect oRedisConnectInfo)
 
     runResourceT
-        $ runStdoutLoggingT
-        $ filterLogger (const (>= logLevel))
+        $ runLoggerLoggingT app
         $ withThreadContext context
         $ runReaderT action app
   where
-    logLevel
-        | oDebug = LevelDebug
-        | oTrace = LevelDebug
-        | otherwise = LevelInfo
-
     context = ["instance" .= oInstance, "queue" .= decodeUtf8 oRestyleQueue]
