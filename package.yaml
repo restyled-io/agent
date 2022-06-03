@@ -7,6 +7,7 @@ dependencies:
 
 ghc-options:
   - -Weverything
+  - -Wno-all-missed-specialisations
   - -Wno-missing-exported-signatures # re-enables missing-signatures
   - -Wno-missing-import-lists
   - -Wno-missing-safe-haskell-mode
