@@ -107,6 +107,7 @@ restyledRequest method path = do
     req <- liftIO $ parseRequest $ method <> " " <> unpack host <> path
     pure $ addAuthorization token $ setRequestCheckStatus req
   where
+    addAuthorization :: Text -> Request -> Request
     addAuthorization token =
         addRequestHeader hAuthorization $ "token " <> encodeUtf8 token
 

@@ -14,12 +14,13 @@ extra-deps:
   - github: LeapYear/monad-validate
     commit: 5b181b7c57d6e2c975c533b0a0072e9aeb15fb99
 
-  - github: freckle/logging
-    commit: e4f039f30f470d51497be886d342d58d24ae0045
+  - Blammo-1.0.0.0
 
-  # For freckle/logging
+  # For Blammo
   - monad-logger-aeson-0.2.0.0
   - context-0.2.0.0
 
   # For weeder-2.3.0
   - algebraic-graphs-0.5
+
+allow-newer: true

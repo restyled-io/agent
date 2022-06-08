@@ -42,4 +42,5 @@ withApp opts@Options {..} action = do
         $ withThreadContext context
         $ runReaderT action app
   where
-    context = ["instance" .= oInstance, "queue" .= decodeUtf8 oRestyleQueue]
+    context =
+        ["instance" .= oInstance, "queue" .= decodeUtf8 @Text oRestyleQueue]

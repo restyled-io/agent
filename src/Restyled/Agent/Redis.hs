@@ -22,7 +22,7 @@ module Restyled.Agent.Redis
 
 import Restyled.Agent.Prelude
 
-import Data.ByteString.Lazy (toStrict)
+--import Data.ByteString.Lazy (toStrict)
 import Database.Redis
     ( ConnectInfo
     , Connection

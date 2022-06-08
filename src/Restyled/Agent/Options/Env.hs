@@ -5,8 +5,8 @@ module Restyled.Agent.Options.Env
 
 import Restyled.Agent.Prelude
 
+import qualified Blammo.Logging.LogSettings.Env as LoggingEnv
 import Env
-import qualified Logging.Settings.Env as LoggingEnv
 import qualified Restyled.Agent.GitHub as GitHub
 import qualified Restyled.Agent.Redis as Redis
 

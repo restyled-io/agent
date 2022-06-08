@@ -6,6 +6,7 @@ import Restyled.Agent.Prelude
 
 import Control.Monad.Validate
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Restyled.Agent.GitHub
 import Restyled.Agent.Options
 import Restyled.Agent.Process
@@ -99,7 +100,7 @@ dockerRunSkippedJob
     -> NonEmpty Text
     -> m ExitCode
 dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
-    hPutBuilder h $ encodeUtf8Builder $ formatMessages messages
+    liftIO $ T.hPutStr h $ formatMessages messages
     hFlush h
     handleAny warn $ void $ runRestylerImage
         repo

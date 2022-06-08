@@ -137,7 +137,7 @@ completeLifecycleAction LifecycleHookDetails {..} action = do
           )
     logDebug
         $ "Response"
-        :# [ "status" .= show
+        :# [ "status" .= show @String
                  (resp ^. AWS.completeLifecycleActionResponse_httpStatus)
            ]
   where

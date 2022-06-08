@@ -21,8 +21,9 @@ awaitWebhook = do
     eresult <- runRedis $ brpop [queueName] webhookTimeout
 
     case over _2 eitherDecodeStrict <$$> eresult of
-        Left err -> Nothing
-            <$ logWarn ("Error Reply from Redis" :# ["body" .= show err])
+        Left err ->
+            Nothing <$ logWarn
+                ("Error Reply from Redis" :# ["body" .= show @String err])
         Right Nothing -> pure Nothing
         Right (Just (_, Left err)) ->
             Nothing <$ logWarn ("Unexpected JSON" :# ["message" .= err])

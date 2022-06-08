@@ -43,6 +43,7 @@ default-extensions:
 library:
   source-dirs: src
   dependencies:
+    - Blammo
     - aeson
     - amazonka
     - amazonka-autoscaling
@@ -52,28 +53,26 @@ library:
     - conduit
     - conduit-extra
     - envparse
-    - exceptions
     - github
     - hedis
     - http-conduit
     - http-types
     - immortal
-    - lens
-    - logging
+    - microlens-platform
     - monad-logger
-    - monad-logger-aeson
     - monad-validate
     - optparse-applicative
+    - relude
     - resourcet
-    - rio
+    - text
+    - time
     - typed-process
+    - unliftio
+    - unliftio-core
 
     # For GitHub extension modules
     - jwt
     - tagged
-    - text
-    - time
-    - unliftio
 
 executables:
   agent:
