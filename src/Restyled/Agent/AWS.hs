@@ -14,7 +14,6 @@ import Restyled.Agent.Prelude
 
 import Amazonka (AWSRequest, AWSResponse, Env)
 import qualified Amazonka as AWS
-import qualified Blammo.Logging as Logging
 import Conduit
 import qualified Control.Monad.Logger as Logger
 
@@ -26,7 +25,7 @@ instance HasAWS Env where
 
 discover :: (MonadIO m, MonadLoggerIO m) => m AWS.Env
 discover = do
-    loggerIO <- Logging.askLoggerIO
+    loggerIO <- askLoggerIO
     env <- liftIO $ AWS.newEnv AWS.discover
     pure $ env
         { AWS.envLogger = \level msg -> do
@@ -37,12 +36,12 @@ discover = do
                 (Logger.toLogStr msg)
         }
 
-fromLevel :: AWS.LogLevel -> Logging.LogLevel
+fromLevel :: AWS.LogLevel -> LogLevel
 fromLevel = \case
-    AWS.Info -> Logging.LevelInfo
-    AWS.Error -> Logging.LevelError
-    AWS.Debug -> Logging.LevelDebug
-    AWS.Trace -> Logging.LevelOther "trace"
+    AWS.Info -> LevelInfo
+    AWS.Error -> LevelError
+    AWS.Debug -> LevelDebug
+    AWS.Trace -> LevelOther "trace"
 
 send
     :: (MonadResource m, MonadReader env m, HasAWS env, AWSRequest a)
