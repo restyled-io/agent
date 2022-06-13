@@ -119,29 +119,30 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
             :# ["exception" .= displayException ex]
 
 runRestylerImage
-    :: MonadUnliftIO m
+    :: (MonadUnliftIO m, MonadLogger m)
     => ApiRepo
     -> ApiJob
     -> [Text] -- ^ Arguments for docker-run
     -> [Text] -- ^ Arguments for restyled
     -> m ExitCode
-runRestylerImage repo job dockerArgs restylerArgs = runProcessDevNull $ proc
-    "docker"
-    (map unpack $ mconcat
-        [ ["run", "--rm"]
-        , ["--label", "restyler"]
-        , ["--label", "job-id=" <> apiJobIdToText (ApiJob.id job)]
-        , ["--log-driver=awslogs"]
-        , ["--log-opt", "awslogs-region=us-east-1"]
-        , ["--log-opt", "awslogs-group=" <> ApiJob.awsLogGroup job]
-        , ["--log-opt", "awslogs-stream=" <> ApiJob.awsLogStream job]
-        , ["--volume", "/tmp:/tmp"]
-        , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
-        , dockerArgs
-        , [ApiRepo.restylerImage repo]
-        , restylerArgs
-        ]
-    )
+runRestylerImage repo job dockerArgs restylerArgs =
+    runProcessLogged logInfo $ proc
+        "docker"
+        (map unpack $ mconcat
+            [ ["run", "--rm"]
+            , ["--label", "restyler"]
+            , ["--label", "job-id=" <> apiJobIdToText (ApiJob.id job)]
+            , ["--log-driver=awslogs"]
+            , ["--log-opt", "awslogs-region=us-east-1"]
+            , ["--log-opt", "awslogs-group=" <> ApiJob.awsLogGroup job]
+            , ["--log-opt", "awslogs-stream=" <> ApiJob.awsLogStream job]
+            , ["--volume", "/tmp:/tmp"]
+            , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
+            , dockerArgs
+            , [ApiRepo.restylerImage repo]
+            , restylerArgs
+            ]
+        )
 
 validatePullRequestEvent
     :: MonadValidate (NonEmpty Text) m => ApiRepo -> PullRequestEvent -> m ()

@@ -1,21 +1,44 @@
 module Restyled.Agent.Process
-    ( runProcessDevNull
+    ( runProcessLogged
     ) where
 
 import Restyled.Agent.Prelude
 
 import Conduit
+import qualified Data.Conduit.Binary as CB
 import Data.Conduit.Process.Typed (createSource)
 
-runProcessDevNull
-    :: MonadUnliftIO m => ProcessConfig stdin stdout stderr -> m ExitCode
-runProcessDevNull pc = withUnliftIO $ \u -> do
+-- | Run a process and log its @stdout@ and @stderr@ using the given function
+--
+-- @{ stream: "stdout|stderr" }@ will be pre-attached to the 'Message', though
+-- you could add more by pattern-matching and re-building in your function.
+--
+runProcessLogged
+    :: (MonadUnliftIO m, MonadLogger m)
+    => (Message -> m ())
+    -> ProcessConfig stdin stdout stderr
+    -> m ExitCode
+runProcessLogged logX =
+    runProcessSinks (sinkLogger "stdout" logX) (sinkLogger "stderr" logX)
+
+sinkLogger
+    :: MonadLogger m
+    => Text
+    -> (Message -> m ())
+    -> ConduitT ByteString Void m ()
+sinkLogger stream logX = CB.lines .| mapM_C (logX . toMessage)
+    where toMessage bs = decodeUtf8 bs :# ["stream" .= stream]
+
+runProcessSinks
+    :: MonadUnliftIO m
+    => ConduitT ByteString Void m () -- ^ Sink for @stdout@
+    -> ConduitT ByteString Void m () -- ^ Sink for @stderr@
+    -> ProcessConfig stdin stdout stderr
+    -> m ExitCode
+runProcessSinks sinkStdout sinkStderr pc = withUnliftIO $ \u -> do
     let pc' = setStdout createSource $ setStderr createSource pc
 
     withProcessWait pc' $ \p -> do
-        a <- async $ unliftIO u $ drain $ getStdout p
-        b <- async $ unliftIO u $ drain $ getStderr p
+        a <- async $ unliftIO u $ runConduit $ getStdout p .| sinkStdout
+        b <- async $ unliftIO u $ runConduit $ getStderr p .| sinkStderr
         wait a *> wait b *> waitExitCode p
-  where
-    drain :: MonadUnliftIO m => ConduitT () ByteString (ResourceT m) () -> m ()
-    drain source = runResourceT $ runConduit $ source .| sinkFile "/dev/null"
