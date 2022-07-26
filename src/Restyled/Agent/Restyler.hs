@@ -72,6 +72,7 @@ dockerRunJob repo job = handleAny (exceptionHandler repo job) $ do
             , optionalEnv "STATSD_PORT" $ pack . show <$> oStatsdPort
             , optionalEnv "DEBUG" $ "1" <$ guard
                 (ApiRepo.restylerLogLevel repo == "DEBUG")
+            , optionalEnv "LOG_FORMAT" $ ApiRepo.restylerLogFormat repo
             ]
         )
         ["--job-url", ApiJob.url job, apiJobSpec job]

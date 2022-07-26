@@ -16,6 +16,7 @@ data ApiRepo = ApiRepo
     , marketplacePlanAllows :: MarketplacePlanAllows
     , restylerImage :: Text
     , restylerLogLevel :: Text
+    , restylerLogFormat :: Maybe Text
     }
     deriving stock Generic
     deriving anyclass FromJSON
