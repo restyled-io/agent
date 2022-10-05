@@ -106,8 +106,12 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
     handleAny warn $ void $ runRestylerImage
         repo
         job
-        ["--entrypoint", "fold"]
-        ["--width", "72", "--spaces", pack tmp]
+        ["--entrypoint", "sh"]
+        [ "-c"
+        , "fold --width 72 --spaces '"
+        <> pack tmp
+        <> "' | jo -d. level=info message.text=@-"
+        ]
     pure ExitSuccess
   where
     formatMessages :: NonEmpty Text -> Text
