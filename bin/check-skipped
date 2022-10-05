@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+
+cat >"$tmp" <<'EOM'
+Ignoring Restyle PR due to some error
+
+Lorem ipsum {dolor sit amet}, consectetur: adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+EOM
+
+docker run --rm \
+  --volume /tmp:/tmp:ro \
+  --entrypoint sh \
+  restyled/restyler:main -c "fold --width 72 --spaces '$tmp' | jo -d. level=info message.text=@-" | jq .
