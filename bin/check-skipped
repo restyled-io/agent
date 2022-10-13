@@ -13,4 +13,4 @@ EOM
 docker run --rm \
   --volume /tmp:/tmp:ro \
   --entrypoint sh \
-  restyled/restyler:main -c "fold --width 72 --spaces '$tmp' | jo -d. level=info message.text=@-" | jq .
+  restyled/restyler:main -c "fold --width 72 --spaces '$tmp' | jo -d. time=\"\$(date --utc --iso-8601=s)\" level=info message.text=@-" | jq .

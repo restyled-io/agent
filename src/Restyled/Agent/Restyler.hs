@@ -110,7 +110,7 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
         [ "-c"
         , "fold --width 72 --spaces '"
         <> pack tmp
-        <> "' | jo -d. level=info message.text=@-"
+        <> "' | jo -d. time=\"$(date --utc --iso-8601=s)\" level=info message.text=@-"
         ]
     pure ExitSuccess
   where
