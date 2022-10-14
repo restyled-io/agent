@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Something to increment to force deploys when there are no real changes: 0
+#
+###
 set -euo pipefail
 
 ec2metadata() {
