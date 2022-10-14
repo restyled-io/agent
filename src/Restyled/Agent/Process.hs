@@ -8,7 +8,7 @@ import Conduit
 import qualified Data.Conduit.Binary as CB
 import Data.Conduit.Process.Typed (createSource)
 
--- | Run a process and log its @stdout@ and @stderr@ using the given function
+-- | Run a process and log its @stdout@ and @stderr@ using the given functions
 --
 -- @{ stream: "stdout|stderr" }@ will be pre-attached to the 'Message', though
 -- you could add more by pattern-matching and re-building in your function.
@@ -16,10 +16,12 @@ import Data.Conduit.Process.Typed (createSource)
 runProcessLogged
     :: (MonadUnliftIO m, MonadLogger m)
     => (Message -> m ())
+    -> (Message -> m ())
     -> ProcessConfig stdin stdout stderr
     -> m ExitCode
-runProcessLogged logX =
-    runProcessSinks (sinkLogger "stdout" logX) (sinkLogger "stderr" logX)
+runProcessLogged logStdout logStderr = runProcessSinks
+    (sinkLogger "stdout" logStdout)
+    (sinkLogger "stderr" logStderr)
 
 sinkLogger
     :: MonadLogger m

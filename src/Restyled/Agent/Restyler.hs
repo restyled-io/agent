@@ -131,7 +131,7 @@ runRestylerImage
     -> [Text] -- ^ Arguments for restyled
     -> m ExitCode
 runRestylerImage repo job dockerArgs restylerArgs =
-    runProcessLogged logDebug $ proc
+    runProcessLogged logDebug logWarn $ proc
         "docker"
         (map unpack $ mconcat
             [ ["run", "--rm"]
