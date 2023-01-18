@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Something to increment to force deploys when there are no real changes: 0
+# Something to increment to force deploys when there are no real changes: 1
 #
 ###
 set -euo pipefail
