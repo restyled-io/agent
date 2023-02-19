@@ -74,6 +74,11 @@ library:
     - jwt
     - tagged
 
+    # Database.Redis.TLS
+    - errors
+    - data-default-class
+    - tls
+
 executables:
   agent:
     main: Main.hs
