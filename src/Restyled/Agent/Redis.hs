@@ -28,9 +28,9 @@ import Database.Redis
     , defaultConnectInfo
     , llen
     , lpush
-    , parseConnectInfo
     )
 import qualified Database.Redis as Redis
+import qualified Database.Redis.TLS as TLS
 
 class HasRedis env where
     redisConnectionL :: Lens' env Connection
@@ -43,3 +43,6 @@ runRedis action = do
     conn <- view redisConnectionL
     liftIO $ Redis.runRedis conn action
 
+parseConnectInfo :: String -> Either String ConnectInfo
+parseConnectInfo url = TLS.parseConnectInfo TLS.clientParamsNoVerify url
+    <|> Redis.parseConnectInfo url
