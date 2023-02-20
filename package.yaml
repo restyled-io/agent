@@ -6,6 +6,8 @@ dependencies:
   - base
 
 ghc-options:
+  - -fignore-optim-changes
+  - -fwrite-ide-info
   - -Weverything
   - -Wno-all-missed-specialisations
   - -Wno-missing-exported-signatures # re-enables missing-signatures
