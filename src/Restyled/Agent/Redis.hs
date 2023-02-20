@@ -15,14 +15,10 @@ module Restyled.Agent.Redis
     , llen
     , lpush
     , brpop
-
-    -- * Convenience
-    , encodeStrict
     ) where
 
 import Restyled.Agent.Prelude
 
---import Data.ByteString.Lazy (toStrict)
 import Database.Redis
     ( ConnectInfo
     , Connection
@@ -47,5 +43,3 @@ runRedis action = do
     conn <- view redisConnectionL
     liftIO $ Redis.runRedis conn action
 
-encodeStrict :: ToJSON a => a -> ByteString
-encodeStrict = toStrict . encode
