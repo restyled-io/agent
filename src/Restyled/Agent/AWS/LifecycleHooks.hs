@@ -115,12 +115,7 @@ data LifecycleHookActionResult
     | ActionResultAbandon
 
 completeLifecycleAction
-    :: ( MonadIO m
-       , MonadResource m
-       , MonadLogger m
-       , MonadReader env m
-       , HasAWS env
-       )
+    :: (MonadResource m, MonadLogger m, MonadReader env m, HasAWS env)
     => LifecycleHookDetails
     -> LifecycleHookActionResult
     -> m ()

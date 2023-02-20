@@ -23,7 +23,7 @@ class HasAWS env where
 instance HasAWS Env where
     awsEnvL = id
 
-discover :: (MonadIO m, MonadLoggerIO m) => m AWS.Env
+discover :: MonadLoggerIO m => m AWS.Env
 discover = do
     loggerIO <- askLoggerIO
     env <- liftIO $ AWS.newEnv AWS.discover
