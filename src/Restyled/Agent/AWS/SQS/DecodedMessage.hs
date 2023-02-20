@@ -53,8 +53,7 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
         )
 
 receiveDecodedMessage
-    :: ( MonadIO m
-       , MonadResource m
+    :: ( MonadResource m
        , MonadLogger m
        , MonadReader env m
        , HasAWS env
@@ -82,12 +81,7 @@ receiveDecodedMessage queueUrl = do
         DecodedMessage queueUrl recieptHandle <$> eitherDecodeText body
 
 deleteDecodedMessage
-    :: ( MonadIO m
-       , MonadResource m
-       , MonadLogger m
-       , MonadReader env m
-       , HasAWS env
-       )
+    :: (MonadResource m, MonadLogger m, MonadReader env m, HasAWS env)
     => DecodedMessage a
     -> m ()
 deleteDecodedMessage DecodedMessage {..} = do
