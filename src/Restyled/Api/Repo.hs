@@ -17,6 +17,7 @@ data ApiRepo = ApiRepo
     , restylerImage :: Text
     , restylerLogLevel :: Text
     , restylerLogFormat :: Maybe Text
+    , restylerEnv :: Maybe [Text]
     }
     deriving stock Generic
     deriving anyclass FromJSON
