@@ -4,7 +4,6 @@ module Restyled.Agent.Restyler
 
 import Restyled.Agent.Prelude
 
-import Control.Monad.Validate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Restyled.Agent.GitHub
@@ -13,74 +12,56 @@ import Restyled.Agent.Process
 import qualified Restyled.Api as Api
 import qualified Restyled.Api.Job as ApiJob
 import Restyled.Api.Job (ApiJob, apiJobIdToText, apiJobSpec)
-import Restyled.Api.MarketplacePlanAllows
 import qualified Restyled.Api.Repo as ApiRepo
 import Restyled.Api.Repo (ApiRepo)
 
 processPullRequestEvent
-    :: (MonadUnliftIO m, MonadLogger m, MonadReader env m, HasOptions env)
+    :: ( MonadUnliftIO m
+       , MonadMask m
+       , MonadLogger m
+       , MonadReader env m
+       , HasOptions env
+       )
     => PullRequestEvent
     -> m ()
 processPullRequestEvent event
     | not $ pullRequestEventIsInteresting event
     = logDebug $ "Ignoring uninteresting PR Event" :# ["event" .= event]
     | otherwise
-    = do
+    = withThreadContext context $ do
         repo <- Api.upsertRepo
-            (simpleOwnerLogin $ repoOwner $ pullRequestRepository event)
-            (repoName $ pullRequestRepository event)
+            owner
+            name
             (repoPrivate $ pullRequestRepository event)
             (installationId $ pullRequestInstallation event)
-        job <- Api.createJob repo pullRequest
-        result <- runValidateT $ validatePullRequestEvent repo event
 
-        logInfo $ "Job validated" :# ["job" .= job, "result" .= result]
+        Options {..} <- view optionsL
+        token <- getGitHubAppToken oGitHubAppId oGitHubAppKey
+            $ ApiRepo.installationId repo
 
-        start <- liftIO getCurrentTime
-        exitCode <- case result of
-            Left messages -> dockerRunSkippedJob repo job messages
-            Right () -> dockerRunJob repo job
+        job <- Api.createJob repo pull
 
-        finish <- liftIO getCurrentTime
-        logInfo
-            $ "Job complete"
-            :# [ "job" .= job
-               , "exitCode" .= exitCodeInt exitCode
-               , "duration" .= diffUTCTime finish start
-               ]
+        withThreadContext ["job" .= ApiJob.url job] $ do
+            exitCode <- handleAny (exceptionHandler repo job) $ runRestylerImage
+                repo
+                job
+                (mconcat
+                    [ maybe [] (\n -> ["--net", n]) oNet
+                    , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
+                    , ["--env", "STATSD_HOST"]
+                    , ["--env", "STATSD_PORT"]
+                    , concatMap (\e -> ["--env", e]) $ ApiRepo.restylerEnv repo
+                    ]
+                )
+                ["--job-url", ApiJob.url job, apiJobSpec job]
 
-        void $ Api.completeJob (ApiJob.id job) exitCode
-    where pullRequest = pullRequestNumber $ pullRequestEventPullRequest event
-
-dockerRunJob
-    :: (MonadUnliftIO m, MonadLogger m, MonadReader env m, HasOptions env)
-    => ApiRepo
-    -> ApiJob
-    -> m ExitCode
-dockerRunJob repo job = handleAny (exceptionHandler repo job) $ do
-    Options {..} <- view optionsL
-    token <- getGitHubAppToken oGitHubAppId oGitHubAppKey
-        $ ApiRepo.installationId repo
-
-    runRestylerImage
-        repo
-        job
-        (mconcat
-            [ maybe [] (\n -> ["--net", n]) oNet
-            , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
-            , optionalEnv "STATSD_HOST" $ pack <$> oStatsdHost
-            , optionalEnv "STATSD_PORT" $ pack . show <$> oStatsdPort
-            , concatMap (\e -> ["--env", e])
-            $ fromMaybe []
-            $ ApiRepo.restylerEnv repo
-            ]
-        )
-        ["--job-url", ApiJob.url job, apiJobSpec job]
+            logInfo $ "Job complete" :# ["exitCode" .= exitCodeInt exitCode]
+            void $ Api.completeJob (ApiJob.id job) exitCode
   where
-    optionalEnv :: Text -> Maybe Text -> [Text]
-    optionalEnv name = \case
-        Nothing -> []
-        Just x -> ["--env", name <> "=" <> x]
+    owner = simpleOwnerLogin $ repoOwner $ pullRequestRepository event
+    name = repoName $ pullRequestRepository event
+    pull = pullRequestNumber $ pullRequestEventPullRequest event
+    context = ["owner" .= owner, "repo" .= name, "pull" .= pull]
 
 exceptionHandler
     :: (MonadUnliftIO m, MonadLogger m)
@@ -152,78 +133,6 @@ runRestylerImage repo job dockerArgs restylerArgs = do
         , restylerArgs
         ]
 
-validatePullRequestEvent
-    :: MonadValidate (NonEmpty Text) m => ApiRepo -> PullRequestEvent -> m ()
-validatePullRequestEvent repo event =
-    validateAgainstPullBot event
-        *> validateAgainstSelf event
-        *> validateAgainstDisabled repo
-        *> validateMarketplacePlanAllows repo
-
-validateAgainstPullBot
-    :: MonadValidate (NonEmpty Text) m => PullRequestEvent -> m ()
-validateAgainstPullBot event = refuteWhen messages $ author == "pull[bot]"
-  where
-    messages :: NonEmpty Text
-    messages = pure "Ignoring pull[bot] Pull Request"
-
-    author = pullRequestEventAuthor event
-
-validateAgainstSelf
-    :: MonadValidate (NonEmpty Text) m => PullRequestEvent -> m ()
-validateAgainstSelf event = refuteWhen messages $ isRestyledBot author
-  where
-    messages :: NonEmpty Text
-    messages = pure "Ignoring Restyled Pull Request"
-
-    author = pullRequestEventAuthor event
-    isRestyledBot =
-        (&&) <$> ("restyled-io" `T.isPrefixOf`) <*> ("[bot]" `T.isSuffixOf`)
-
-validateAgainstDisabled :: MonadValidate (NonEmpty Text) m => ApiRepo -> m ()
-validateAgainstDisabled repo = refuteUnless (pure message)
-    $ ApiRepo.isEnabled repo
-  where
-    message =
-        "The repository "
-            <> toPathPart (ApiRepo.owner repo)
-            <> "/"
-            <> toPathPart (ApiRepo.name repo)
-            <> " has been disabled."
-            <> " If you believe this is an error,"
-            <> " please reach out to support@restyled.io"
-
-validateMarketplacePlanAllows
-    :: MonadValidate (NonEmpty Text) m => ApiRepo -> m ()
-validateMarketplacePlanAllows repo = case ApiRepo.marketplacePlanAllows repo of
-    MarketplacePlanAllows -> pure ()
-    MarketplacePlanForbids limitation -> refute $ pure $ message limitation
-  where
-    message = \case
-        MarketplacePlanNotFound ->
-            "No Marketplace plan for the owner of this repository ("
-                <> ownerName
-                <> ")"
-        MarketplacePlanPublicOnly ->
-            "Marketplace plan for the owner of this repository ("
-                <> ownerName
-                <> ") only allows public repositories"
-        MarketplacePlanMaxRepos ->
-            "You have reached the maximum number of private repositories for the Marketplace plan for the owner of this repository ("
-                <> ownerName
-                <> ")"
-        MarketplacePlanAccountExpired asOf ->
-            "Marketplace plan for the owner of this repository ("
-                <> ownerName
-                <> ") expired at "
-                <> pack (show asOf)
-
-    ownerName = toPathPart $ ApiRepo.owner repo
-
-pullRequestEventAuthor :: PullRequestEvent -> Text
-pullRequestEventAuthor =
-    untagName . simpleUserLogin . pullRequestUser . pullRequestEventPullRequest
-
 pullRequestEventIsInteresting :: PullRequestEvent -> Bool
 pullRequestEventIsInteresting =
     (`elem` interestingPullRequestEventActions) . pullRequestEventAction
@@ -231,9 +140,3 @@ pullRequestEventIsInteresting =
 interestingPullRequestEventActions :: [PullRequestEventType]
 interestingPullRequestEventActions =
     [PullRequestOpened, PullRequestClosed, PullRequestSynchronized]
-
-refuteWhen :: MonadValidate e m => e -> Bool -> m ()
-refuteWhen e b = when b $ refute e
-
-refuteUnless :: MonadValidate e m => e -> Bool -> m ()
-refuteUnless e b = unless b $ refute e

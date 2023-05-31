@@ -82,13 +82,6 @@ packages:
   original:
     subdir: lib/services/amazonka-sts
     url: https://github.com/brendanhay/amazonka/archive/f73a957d05f64863e867cf39d0db260718f0fadd.tar.gz
-- completed:
-    hackage: monad-validate-1.2.0.1@sha256:5a100da896f11ca4b7c123da85decbedeb46c37054a097f258ac911e715cb68d,2587
-    pantry-tree:
-      sha256: 034ee4de9765e38b763f5d73b236cc112205728e680cefbfe12d2882accc3264
-      size: 611
-  original:
-    hackage: monad-validate-1.2.0.1
 snapshots:
 - completed:
     sha256: 17870c63f8041ac17a38096124abeb953cb14d84bfc96deb88f9b24daa97b347

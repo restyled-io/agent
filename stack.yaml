@@ -9,4 +9,3 @@ extra-deps:
       - lib/services/amazonka-sqs
       - lib/services/amazonka-sso
       - lib/services/amazonka-sts
-  - monad-validate-1.2.0.1

@@ -61,6 +61,7 @@ bootAgentThread n = withThreadContext context $ do
 
     loop
         :: ( MonadUnliftIO m
+           , MonadMask m
            , MonadLogger m
            , MonadReader env m
            , HasOptions env

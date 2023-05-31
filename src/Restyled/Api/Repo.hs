@@ -5,7 +5,6 @@ module Restyled.Api.Repo
 import Restyled.Agent.Prelude
 
 import Restyled.Agent.GitHub
-import Restyled.Api.MarketplacePlanAllows
 
 data ApiRepo = ApiRepo
     { owner :: Name Owner
@@ -13,9 +12,8 @@ data ApiRepo = ApiRepo
     , isPrivate :: Bool
     , isEnabled :: Bool
     , installationId :: Id Installation
-    , marketplacePlanAllows :: MarketplacePlanAllows
     , restylerImage :: Text
-    , restylerEnv :: Maybe [Text]
+    , restylerEnv :: [Text]
     }
     deriving stock Generic
     deriving anyclass FromJSON
