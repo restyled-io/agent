@@ -9,8 +9,6 @@ import Restyled.Agent.GitHub
 data ApiRepo = ApiRepo
     { owner :: Name Owner
     , name :: Name Repo
-    , isPrivate :: Bool
-    , isEnabled :: Bool
     , installationId :: Id Installation
     , restylerImage :: Text
     , restylerEnv :: [Text]
