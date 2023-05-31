@@ -70,7 +70,9 @@ dockerRunJob repo job = handleAny (exceptionHandler repo job) $ do
             , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
             , optionalEnv "STATSD_HOST" $ pack <$> oStatsdHost
             , optionalEnv "STATSD_PORT" $ pack . show <$> oStatsdPort
-            , fromMaybe [] $ ApiRepo.restylerEnv repo
+            , concatMap (\e -> ["--env", e])
+            $ fromMaybe []
+            $ ApiRepo.restylerEnv repo
             ]
         )
         ["--job-url", ApiJob.url job, apiJobSpec job]
@@ -128,24 +130,27 @@ runRestylerImage
     -> [Text] -- ^ Arguments for docker-run
     -> [Text] -- ^ Arguments for restyled
     -> m ExitCode
-runRestylerImage repo job dockerArgs restylerArgs =
-    runProcessLogged (logDebugNS "restyler") (logWarnNS "restyler") $ proc
-        "docker"
-        (map unpack $ mconcat
-            [ ["run", "--rm"]
-            , ["--label", "restyler"]
-            , ["--label", "job-id=" <> apiJobIdToText (ApiJob.id job)]
-            , ["--log-driver=awslogs"]
-            , ["--log-opt", "awslogs-region=us-east-1"]
-            , ["--log-opt", "awslogs-group=" <> ApiJob.awsLogGroup job]
-            , ["--log-opt", "awslogs-stream=" <> ApiJob.awsLogStream job]
-            , ["--volume", "/tmp:/tmp"]
-            , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
-            , dockerArgs
-            , [ApiRepo.restylerImage repo]
-            , restylerArgs
-            ]
-        )
+runRestylerImage repo job dockerArgs restylerArgs = do
+    ec <- runProcessLogged (logDebugNS "restyler") (logWarnNS "restyler")
+        $ proc "docker" args
+    when (ec == ExitFailure 125) $ do
+        logError $ "Container failed to run (exit code 125)" :# ["args" .= args]
+    pure ec
+  where
+    args = map unpack $ mconcat
+        [ ["run", "--rm"]
+        , ["--label", "restyler"]
+        , ["--label", "job-id=" <> apiJobIdToText (ApiJob.id job)]
+        , ["--log-driver=awslogs"]
+        , ["--log-opt", "awslogs-region=us-east-1"]
+        , ["--log-opt", "awslogs-group=" <> ApiJob.awsLogGroup job]
+        , ["--log-opt", "awslogs-stream=" <> ApiJob.awsLogStream job]
+        , ["--volume", "/tmp:/tmp"]
+        , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
+        , dockerArgs
+        , [ApiRepo.restylerImage repo]
+        , restylerArgs
+        ]
 
 validatePullRequestEvent
     :: MonadValidate (NonEmpty Text) m => ApiRepo -> PullRequestEvent -> m ()
