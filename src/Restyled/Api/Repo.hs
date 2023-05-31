@@ -15,8 +15,6 @@ data ApiRepo = ApiRepo
     , installationId :: Id Installation
     , marketplacePlanAllows :: MarketplacePlanAllows
     , restylerImage :: Text
-    , restylerLogLevel :: Text
-    , restylerLogFormat :: Maybe Text
     , restylerEnv :: Maybe [Text]
     }
     deriving stock Generic
