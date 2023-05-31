@@ -70,18 +70,11 @@ dockerRunJob repo job = handleAny (exceptionHandler repo job) $ do
             , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
             , optionalEnv "STATSD_HOST" $ pack <$> oStatsdHost
             , optionalEnv "STATSD_PORT" $ pack . show <$> oStatsdPort
-            , fromMaybe builtEnv $ ApiRepo.restylerEnv repo
+            , fromMaybe [] $ ApiRepo.restylerEnv repo
             ]
         )
         ["--job-url", ApiJob.url job, apiJobSpec job]
   where
-    builtEnv :: [Text]
-    builtEnv = mconcat
-        [ optionalEnv "DEBUG" $ "1" <$ guard
-            (ApiRepo.restylerLogLevel repo == "DEBUG")
-        , optionalEnv "LOG_FORMAT" $ ApiRepo.restylerLogFormat repo
-        ]
-
     optionalEnv :: Text -> Maybe Text -> [Text]
     optionalEnv name = \case
         Nothing -> []
