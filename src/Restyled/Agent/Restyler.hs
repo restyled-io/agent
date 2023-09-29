@@ -39,30 +39,33 @@ processPullRequestEvent event
         options <- view optionsL
         token <-
           getGitHubAppToken
-            options.gitHubAppId
-            options.gitHubAppKey
-            repo.installationId
+            options
+            . gitHubAppId
+              options
+            . gitHubAppKey
+              repo
+            . installationId
 
         job <- Api.createJob repo pull
 
-        withThreadContext ["job" .= job.url] $ do
+        withThreadContext ["job" .= job . url] $ do
           exitCode <-
-            handleAny (exceptionHandler repo job)
-              $ runRestylerImage
+            handleAny (exceptionHandler repo job) $
+              runRestylerImage
                 repo
                 job
                 ( mconcat
-                    [ maybe [] (\n -> ["--net", n]) options.net
+                    [ maybe [] (\n -> ["--net", n]) options . net
                     , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
                     , ["--env", "STATSD_HOST"]
                     , ["--env", "STATSD_PORT"]
-                    , concatMap (\e -> ["--env", e]) $ repo.restylerEnv
+                    , concatMap (\e -> ["--env", e]) $ repo . restylerEnv
                     ]
                 )
-                ["--job-url", job.url, apiJobSpec job]
+                ["--job-url", job . url, apiJobSpec job]
 
           logInfo $ "Job complete" :# ["exitCode" .= exitCodeInt exitCode]
-          void $ Api.completeJob job.id exitCode
+          void $ Api.completeJob job . id exitCode
  where
   owner = simpleOwnerLogin $ repoOwner $ pullRequestRepository event
   name = repoName $ pullRequestRepository event
@@ -91,17 +94,17 @@ dockerRunSkippedJob
 dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
   liftIO $ T.hPutStr h $ formatMessages messages
   hFlush h
-  handleAny warn
-    $ void
-    $ runRestylerImage
-      repo
-      job
-      ["--entrypoint", "sh"]
-      [ "-c"
-      , "fold --width 72 --spaces '"
-          <> pack tmp
-          <> "' | jo -d. time=\"$(date --utc --iso-8601=s)\" level=info message.text=@-"
-      ]
+  handleAny warn $
+    void $
+      runRestylerImage
+        repo
+        job
+        ["--entrypoint", "sh"]
+        [ "-c"
+        , "fold --width 72 --spaces '"
+            <> pack tmp
+            <> "' | jo -d. time=\"$(date --utc --iso-8601=s)\" level=info message.text=@-"
+        ]
   pure ExitSuccess
  where
   formatMessages :: NonEmpty Text -> Text
@@ -109,9 +112,9 @@ dockerRunSkippedJob repo job messages = withSystemTempFile "" $ \tmp h -> do
 
   warn :: (MonadLogger m, Exception ex) => ex -> m ()
   warn ex =
-    logWarn
-      $ "Ignoring exception during skipped-job-handling"
-      :# ["exception" .= displayException ex]
+    logWarn $
+      "Ignoring exception during skipped-job-handling"
+        :# ["exception" .= displayException ex]
 
 runRestylerImage
   :: (MonadUnliftIO m, MonadLogger m)
@@ -124,26 +127,26 @@ runRestylerImage
   -> m ExitCode
 runRestylerImage repo job dockerArgs restylerArgs = do
   ec <-
-    runProcessLogged (logDebugNS "restyler") (logWarnNS "restyler")
-      $ proc "docker" args
+    runProcessLogged (logDebugNS "restyler") (logWarnNS "restyler") $
+      proc "docker" args
   when (ec == ExitFailure 125) $ do
     logError $ "Container failed to run (exit code 125)" :# ["args" .= args]
   pure ec
  where
   args =
-    map unpack
-      $ mconcat
+    map unpack $
+      mconcat
         [ ["run", "--rm"]
         , ["--label", "restyler"]
-        , ["--label", "job-id=" <> apiJobIdToText job.id]
+        , ["--label", "job-id=" <> apiJobIdToText job . id]
         , ["--log-driver=awslogs"]
         , ["--log-opt", "awslogs-region=us-east-1"]
-        , ["--log-opt", "awslogs-group=" <> job.awsLogGroup]
-        , ["--log-opt", "awslogs-stream=" <> job.awsLogStream]
+        , ["--log-opt", "awslogs-group=" <> job . awsLogGroup]
+        , ["--log-opt", "awslogs-stream=" <> job . awsLogStream]
         , ["--volume", "/tmp:/tmp"]
         , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
         , dockerArgs
-        , [repo.restylerImage]
+        , [repo . restylerImage]
         , restylerArgs
         ]
 

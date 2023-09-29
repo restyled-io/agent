@@ -13,13 +13,13 @@ main :: IO ()
 main = do
   options <- parseOptions
   withApp options $ do
-    case options.lifecycleQueueUrl of
+    case options . lifecycleQueueUrl of
       Nothing -> do
         void bootAgent
         logInfo "No Lifecycle Hook queue, running forever"
         forever $ threadDelay maxBound
       Just queue -> do
-        let m = options.shutdownTimeoutMinutes
+        let m = options . shutdownTimeoutMinutes
         mAgent <- withPendingLifecycleHook queue bootAgent
         mmResult <- for mAgent $ \agent -> do
           withTerminatingLifecycleHook queue $ do
@@ -30,11 +30,11 @@ main = do
           Just Nothing ->
             logError "Failed to process Terminating LifecycleHook"
           Just (Just (Left ())) ->
-            logError
-              $ "Agent shutdown timed out after "
-              <> pack (show m)
-              <> " minute(s)"
-              :# []
+            logError $
+              "Agent shutdown timed out after "
+                <> pack (show m)
+                <> " minute(s)"
+                  :# []
           Just (Just (Right ())) -> logInfo "Agent shutdown complete"
 
 threadDelayMinutes :: MonadIO m => Natural -> m ()

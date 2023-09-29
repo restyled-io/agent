@@ -83,26 +83,26 @@ withLifecycleHook
 withLifecycleHook transition queue act = do
   options <- view optionsL
   logInfo $ "Awaiting" :# ["transition" .= transition]
-  decodedMessage <- awaitDecodedMessage queue $ predicate options.instanceId
+  decodedMessage <- awaitDecodedMessage queue $ predicate options . instanceId
 
   let finalize action = do
-        completeLifecycleAction decodedMessage.body action
+        completeLifecycleAction decodedMessage . body action
         deleteDecodedMessage decodedMessage
 
   eResult <- tryAny act
 
   case eResult of
     Left ex -> do
-      logError
-        $ "Error"
-        :# [ "transition" .= transition
-           , "exception" .= displayException ex
-           ]
+      logError $
+        "Error"
+          :# [ "transition" .= transition
+             , "exception" .= displayException ex
+             ]
       Nothing <$ finalize ActionResultAbandon
     Right result -> Just result <$ finalize ActionResultContinue
  where
   predicate expectedInstanceId details =
-    details.transition == transition && details.instanceId == expectedInstanceId
+    details . transition == transition && details . instanceId == expectedInstanceId
 
 data LifecycleHookActionResult
   = ActionResultContinue
@@ -114,22 +114,25 @@ completeLifecycleAction
   -> LifecycleHookActionResult
   -> m ()
 completeLifecycleAction details action = do
-  logInfo
-    $ "Completing"
-    :# ["transition" .= details.transition, "result" .= result]
+  logInfo $
+    "Completing"
+      :# ["transition" .= details . transition, "result" .= result]
   resp <-
-    send
-      $ newCompleteLifecycleAction details.hookName details.scalingGroupName result
-      & (completeLifecycleAction_instanceId ?~ details.instanceId)
-      & ( completeLifecycleAction_lifecycleActionToken
-            ?~ details.lifecycleActionToken
-        )
-  logDebug
-    $ "Response"
-    :# [ "status"
-          .= show @String
-            (resp ^. completeLifecycleActionResponse_httpStatus)
-       ]
+    send $
+      newCompleteLifecycleAction details
+        . hookName details
+        . scalingGroupName result
+        & (completeLifecycleAction_instanceId ?~ details . instanceId)
+        & ( completeLifecycleAction_lifecycleActionToken
+              ?~ details
+              . lifecycleActionToken
+          )
+  logDebug $
+    "Response"
+      :# [ "status"
+            .= show @String
+              (resp ^. completeLifecycleActionResponse_httpStatus)
+         ]
  where
   result = case action of
     ActionResultContinue -> "CONTINUE"

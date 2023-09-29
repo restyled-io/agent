@@ -37,12 +37,12 @@ awaitDecodedMessage url predicate = untilJustM $ handleAny onErr $ do
       logDebug $ "Message did not parse: " :# ["error" .= err]
       pure Nothing
     Just (Right decodedMessage)
-      | predicate decodedMessage.body ->
+      | predicate decodedMessage . body ->
           pure $ Just decodedMessage
     Just (Right decodedMessage) -> do
-      logDebug
-        $ "Message was not expected"
-        :# ["body" .= show @String decodedMessage.body]
+      logDebug $
+        "Message was not expected"
+          :# ["body" .= show @String decodedMessage . body]
       pure Nothing
  where
   onErr :: (MonadLogger m, Exception e) => e -> m (Maybe a)
@@ -63,10 +63,10 @@ receiveDecodedMessage
   -> m (Maybe (Either String (DecodedMessage a)))
 receiveDecodedMessage url = do
   resp <-
-    send
-      $ newReceiveMessage url
-      & (receiveMessage_maxNumberOfMessages ?~ 1)
-      & (receiveMessage_waitTimeSeconds ?~ 20)
+    send $
+      newReceiveMessage url
+        & (receiveMessage_maxNumberOfMessages ?~ 1)
+        & (receiveMessage_waitTimeSeconds ?~ 20)
   logDebug $ "Response" :# ["body" .= show @String resp]
 
   pure $ do
@@ -87,8 +87,10 @@ deleteDecodedMessage
 deleteDecodedMessage decodedMessage = do
   let req =
         newDeleteMessage
-          decodedMessage.queueUrl
-          decodedMessage.receiptHandle
+          decodedMessage
+          . queueUrl
+            decodedMessage
+          . receiptHandle
   resp <- send req
   logDebug $ "Response" :# ["body" .= show @String resp]
 

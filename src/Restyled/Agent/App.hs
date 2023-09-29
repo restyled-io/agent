@@ -25,16 +25,16 @@ data App = App
   }
 
 instance HasOptions App where
-  optionsL = lens (.options) $ \x y -> x {options = y}
+  optionsL = lens (. options) $ \x y -> x {options = y}
 
 instance HasLogger App where
-  loggerL = lens (.logger) $ \x y -> x {logger = y}
+  loggerL = lens (. logger) $ \x y -> x {logger = y}
 
 instance HasEnv App where
-  envL = lens (.awsEnv) $ \x y -> x {awsEnv = y}
+  envL = lens (. awsEnv) $ \x y -> x {awsEnv = y}
 
 instance HasRedis App where
-  redisConnectionL = lens (.redisConn) $ \x y -> x {redisConn = y}
+  redisConnectionL = lens (. redisConn) $ \x y -> x {redisConn = y}
 
 newtype TestAppT a = TestAppT
   { _unTestApp :: ReaderT App (LoggingT (ResourceT IO)) a
@@ -56,18 +56,18 @@ newtype TestAppT a = TestAppT
 
 withApp :: Options -> TestAppT a -> IO a
 withApp options action = do
-  logger <- newLogger options.loggerSettings
+  logger <- newLogger options . loggerSettings
   app <-
     App options logger
       <$> runLoggerLoggingT logger AWS.discover
-      <*> liftIO (Redis.checkedConnect options.redisConnectInfo)
+      <*> liftIO (Redis.checkedConnect options . redisConnectInfo)
 
-  runResourceT
-    $ runLoggerLoggingT app
-    $ withThreadContext context
-    $ runReaderT (coerce action) app
+  runResourceT $
+    runLoggerLoggingT app $
+      withThreadContext context $
+        runReaderT (coerce action) app
  where
   context =
-    [ "instance" .= options.instanceId
-    , "queue" .= decodeUtf8 @Text options.restyleQueue
+    [ "instance" .= options . instanceId
+    , "queue" .= decodeUtf8 @Text options . restyleQueue
     ]

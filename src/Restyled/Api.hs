@@ -35,12 +35,12 @@ upsertRepo
   -> m ApiRepo
 upsertRepo owner name isPrivate installationId = do
   req <-
-    restyledRequest "PUT"
-      $ unpack
-      $ "/gh/"
-      <> toPathPart owner
-      <> "/repos/"
-      <> toPathPart name
+    restyledRequest "PUT" $
+      unpack $
+        "/gh/"
+          <> toPathPart owner
+          <> "/repos/"
+          <> toPathPart name
   resp <- httpJSON $ setRequestBodyJSON body req
   pure $ getResponseBody resp
  where
@@ -108,7 +108,7 @@ restyledRequest
   -> String
   -> m Request
 restyledRequest method path = do
-  (host, token) <- ((.restyledHost) &&& (.restyledToken)) <$> view optionsL
+  (host, token) <- ((. restyledHost) &&& (. restyledToken)) <$> view optionsL
   req <- liftIO $ parseRequest $ method <> " " <> unpack host <> path
   pure $ addAuthorization token $ setRequestCheckStatus req
  where
