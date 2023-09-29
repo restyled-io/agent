@@ -11,19 +11,19 @@ import qualified Restyled.Agent.GitHub as GitHub
 import qualified Restyled.Agent.Redis as Redis
 
 data OptionsEnv = OptionsEnv
-  { oGitHubAppId :: GitHub.Id GitHub.App
-  , oGitHubAppKey :: GitHub.AppKey
-  , oRestyledHost :: Text
-  , oRestyledToken :: Text
-  , oInstance :: Text
-  , oLifecycleQueueUrl :: Maybe Text
-  , oLoggerSettings :: LogSettings
-  , oStatsdHost :: Maybe String
-  , oStatsdPort :: Maybe Int
-  , oRedisConnectInfo :: Redis.ConnectInfo
-  , oRestyleQueue :: ByteString
-  , oRestylerPoolSize :: Natural
-  , oShutdownTimeoutMinutes :: Natural
+  { gitHubAppId :: GitHub.Id GitHub.App
+  , gitHubAppKey :: GitHub.AppKey
+  , restyledHost :: Text
+  , restyledToken :: Text
+  , instanceId :: Text
+  , lifecycleQueueUrl :: Maybe Text
+  , loggerSettings :: LogSettings
+  , statsdHost :: Maybe String
+  , statsdPort :: Maybe Int
+  , redisConnectInfo :: Redis.ConnectInfo
+  , restyleQueue :: ByteString
+  , restylerPoolSize :: Natural
+  , shutdownTimeoutMinutes :: Natural
   }
 
 -- brittany-disable-next-binding

@@ -9,13 +9,13 @@ import Restyled.Agent.Prelude
 
 import Amazonka.SQS.DeleteMessage
 import Amazonka.SQS.ReceiveMessage
-import Amazonka.SQS.Types.Message
+import Amazonka.SQS.Types.Message (message_body, message_receiptHandle)
 import Restyled.Agent.AWS
 
 data DecodedMessage a = DecodedMessage
-  { dmQueueUrl :: Text
-  , dmReceiptHandle :: Text
-  , dmBody :: a
+  { queueUrl :: Text
+  , receiptHandle :: Text
+  , body :: a
   }
 
 awaitDecodedMessage
@@ -28,8 +28,8 @@ awaitDecodedMessage
   => Text
   -> (a -> Bool)
   -> m (DecodedMessage a)
-awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
-  emDecodedMessage <- receiveDecodedMessage queueUrl
+awaitDecodedMessage url predicate = untilJustM $ handleAny onErr $ do
+  emDecodedMessage <- receiveDecodedMessage url
 
   case emDecodedMessage of
     Nothing -> Nothing <$ logDebug "No messages"
@@ -37,12 +37,12 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
       logDebug $ "Message did not parse: " :# ["error" .= err]
       pure Nothing
     Just (Right decodedMessage)
-      | predicate (dmBody decodedMessage) ->
+      | predicate decodedMessage.body ->
           pure $ Just decodedMessage
     Just (Right decodedMessage) -> do
       logDebug
         $ "Message was not expected"
-        :# ["body" .= show @String (dmBody decodedMessage)]
+        :# ["body" .= show @String decodedMessage.body]
       pure Nothing
  where
   onErr :: (MonadLogger m, Exception e) => e -> m (Maybe a)
@@ -61,10 +61,10 @@ receiveDecodedMessage
      )
   => Text
   -> m (Maybe (Either String (DecodedMessage a)))
-receiveDecodedMessage queueUrl = do
+receiveDecodedMessage url = do
   resp <-
     send
-      $ newReceiveMessage queueUrl
+      $ newReceiveMessage url
       & (receiveMessage_maxNumberOfMessages ?~ 1)
       & (receiveMessage_waitTimeSeconds ?~ 20)
   logDebug $ "Response" :# ["body" .= show @String resp]
@@ -78,14 +78,17 @@ receiveDecodedMessage queueUrl = do
     pure $ decodedMessage body recieptHandle
  where
   decodedMessage body recieptHandle =
-    DecodedMessage queueUrl recieptHandle <$> eitherDecodeText body
+    DecodedMessage url recieptHandle <$> eitherDecodeText body
 
 deleteDecodedMessage
   :: (MonadIO m, MonadAWS m, MonadLogger m)
   => DecodedMessage a
   -> m ()
-deleteDecodedMessage DecodedMessage {..} = do
-  let req = newDeleteMessage dmQueueUrl dmReceiptHandle
+deleteDecodedMessage decodedMessage = do
+  let req =
+        newDeleteMessage
+          decodedMessage.queueUrl
+          decodedMessage.receiptHandle
   resp <- send req
   logDebug $ "Response" :# ["body" .= show @String resp]
 

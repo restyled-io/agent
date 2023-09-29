@@ -57,11 +57,12 @@ library
       GeneralizedNewtypeDeriving
       LambdaCase
       MultiParamTypeClasses
+      NoFieldSelectors
       NoImplicitPrelude
       NoMonomorphismRestriction
+      OverloadedRecordDot
       OverloadedStrings
       RankNTypes
-      RecordWildCards
       ScopedTypeVariables
       StandaloneDeriving
       TypeApplications
@@ -125,11 +126,12 @@ executable agent
       GeneralizedNewtypeDeriving
       LambdaCase
       MultiParamTypeClasses
+      NoFieldSelectors
       NoImplicitPrelude
       NoMonomorphismRestriction
+      OverloadedRecordDot
       OverloadedStrings
       RankNTypes
-      RecordWildCards
       ScopedTypeVariables
       StandaloneDeriving
       TypeApplications

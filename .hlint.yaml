@@ -1,0 +1,36 @@
+- ignore: {name: "Use Just"}
+- ignore: {name: "Reduce duplication"}
+- ignore: {name: "Redundant do", within: spec}
+- ignore: {name: "Redundant ^."}
+- ignore: {name: "Use join"}
+- ignore: {name: "Use ++"}
+- ignore: {name: "Use &&"}
+- ignore: {name: "Use ||"}
+- ignore: {name: "Redundant id"}
+- arguments:
+  - -XBangPatterns
+  - -XDataKinds
+  - -XDeriveAnyClass
+  - -XDeriveFoldable
+  - -XDeriveFunctor
+  - -XDeriveGeneric
+  - -XDeriveLift
+  - -XDeriveTraversable
+  - -XDerivingStrategies
+  - -XFlexibleContexts
+  - -XFlexibleInstances
+  - -XGADTs
+  - -XGeneralizedNewtypeDeriving
+  - -XLambdaCase
+  - -XMultiParamTypeClasses
+  - -XNoFieldSelectors
+  - -XNoImplicitPrelude
+  - -XNoMonomorphismRestriction
+  - -XNoStaticPointers # Not used, but avoids reserved word issue
+  - -XOverloadedRecordDot
+  - -XOverloadedStrings
+  - -XRankNTypes
+  - -XScopedTypeVariables
+  - -XStandaloneDeriving
+  - -XTypeApplications
+  - -XTypeFamilies
