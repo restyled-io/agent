@@ -32,7 +32,7 @@ import GitHub.Endpoints.Installations.AccessTokens
 import GitHub.Request
 
 getGitHubAppToken :: MonadIO m => Id App -> AppKey -> Id Installation -> m Text
-getGitHubAppToken appId appKey installationId = liftIO $ do
+getGitHubAppToken appId appKey iId = liftIO $ do
   auth <- authJWTMax appId appKey
-  let req = accessTokenForR installationId
+  let req = accessTokenForR iId
   either throwIO (pure . atToken) =<< github auth req

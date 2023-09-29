@@ -8,7 +8,7 @@ import Restyled.Agent.Prelude
 import Options.Applicative
 
 newtype OptionsCLI = OptionsCLI
-  { oNet :: Maybe Text
+  { net :: Maybe Text
   }
 
 parseCLI :: IO OptionsCLI

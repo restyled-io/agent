@@ -1,3 +1,5 @@
+{-# LANGUAGE FieldSelectors #-}
+
 -- | Extends "GitHub.Data.PullRequests" 'PullRequestEvent'
 module GitHub.Data.PullRequests.Ext
   ( PullRequestEvent (..)
@@ -42,12 +44,12 @@ instance FromJSON PullRequestEvent where
   parseJSON v = typeMismatch "PullRequestEvent" v
 
 instance ToJSON PullRequestEvent where
-  toJSON PullRequestEvent {..} =
+  toJSON event =
     object
-      [ "action" .= show pullRequestEventAction
-      , "number" .= pullRequestEventNumber
-      , -- , "pull_request" .= pullRequestEventPullRequest
-        -- , "repository" .= pullRequestRepository
-        -- , "sender" .= pullRequestSender
-        "installation" .= pullRequestInstallation
+      [ "action" .= show (pullRequestEventAction event)
+      , "number" .= pullRequestEventNumber event
+      , -- , "pull_request" .= pullRequestEventPullRequest event
+        -- , "repository" .= pullRequestRepository event
+        -- , "sender" .= pullRequestSender event
+        "installation" .= pullRequestInstallation event
       ]

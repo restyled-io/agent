@@ -1,3 +1,5 @@
+{-# LANGUAGE FieldSelectors #-}
+
 module GitHub.Data.AccessTokens
   ( AccessToken (..)
   ) where
