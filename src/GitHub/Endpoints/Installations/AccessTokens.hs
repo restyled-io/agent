@@ -6,7 +6,7 @@ import Prelude
 
 import GitHub.Data
 import GitHub.Data.AccessTokens
-import GitHub.Data.Installations
+import GitHub.Data.Installations hiding (installationId)
 import GitHub.Request.Preview
 
 accessTokenForR :: Id Installation -> PreviewRequest 'RW AccessToken

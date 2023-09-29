@@ -108,7 +108,7 @@ restyledRequest
   -> String
   -> m Request
 restyledRequest method path = do
-  (host, token) <- (oRestyledHost &&& oRestyledToken) <$> view optionsL
+  (host, token) <- ((.restyledHost) &&& (.restyledToken)) <$> view optionsL
   req <- liftIO $ parseRequest $ method <> " " <> unpack host <> path
   pure $ addAuthorization token $ setRequestCheckStatus req
  where
