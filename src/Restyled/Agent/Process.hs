@@ -1,6 +1,6 @@
 module Restyled.Agent.Process
-    ( runProcessLogged
-    ) where
+  ( runProcessLogged
+  ) where
 
 import Restyled.Agent.Prelude
 
@@ -12,35 +12,38 @@ import Data.Conduit.Process.Typed (createSource)
 --
 -- @{ stream: "stdout|stderr" }@ will be pre-attached to the 'Message', though
 -- you could add more by pattern-matching and re-building in your function.
---
 runProcessLogged
-    :: (MonadUnliftIO m, MonadLogger m)
-    => (Message -> m ())
-    -> (Message -> m ())
-    -> ProcessConfig stdin stdout stderr
-    -> m ExitCode
-runProcessLogged logStdout logStderr = runProcessSinks
+  :: (MonadUnliftIO m, MonadLogger m)
+  => (Message -> m ())
+  -> (Message -> m ())
+  -> ProcessConfig stdin stdout stderr
+  -> m ExitCode
+runProcessLogged logStdout logStderr =
+  runProcessSinks
     (sinkLogger "stdout" logStdout)
     (sinkLogger "stderr" logStderr)
 
 sinkLogger
-    :: MonadLogger m
-    => Text
-    -> (Message -> m ())
-    -> ConduitT ByteString Void m ()
+  :: MonadLogger m
+  => Text
+  -> (Message -> m ())
+  -> ConduitT ByteString Void m ()
 sinkLogger stream logX = CB.lines .| mapM_C (logX . toMessage)
-    where toMessage bs = decodeUtf8 bs :# ["stream" .= stream]
+ where
+  toMessage bs = decodeUtf8 bs :# ["stream" .= stream]
 
 runProcessSinks
-    :: MonadUnliftIO m
-    => ConduitT ByteString Void m () -- ^ Sink for @stdout@
-    -> ConduitT ByteString Void m () -- ^ Sink for @stderr@
-    -> ProcessConfig stdin stdout stderr
-    -> m ExitCode
+  :: MonadUnliftIO m
+  => ConduitT ByteString Void m ()
+  -- ^ Sink for @stdout@
+  -> ConduitT ByteString Void m ()
+  -- ^ Sink for @stderr@
+  -> ProcessConfig stdin stdout stderr
+  -> m ExitCode
 runProcessSinks sinkStdout sinkStderr pc = withUnliftIO $ \u -> do
-    let pc' = setStdout createSource $ setStderr createSource pc
+  let pc' = setStdout createSource $ setStderr createSource pc
 
-    withProcessWait pc' $ \p -> do
-        a <- async $ unliftIO u $ runConduit $ getStdout p .| sinkStdout
-        b <- async $ unliftIO u $ runConduit $ getStderr p .| sinkStderr
-        wait a *> wait b *> waitExitCode p
+  withProcessWait pc' $ \p -> do
+    a <- async $ unliftIO u $ runConduit $ getStdout p .| sinkStdout
+    b <- async $ unliftIO u $ runConduit $ getStderr p .| sinkStderr
+    wait a *> wait b *> waitExitCode p

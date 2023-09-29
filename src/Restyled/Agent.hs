@@ -1,8 +1,8 @@
 module Restyled.Agent
-    ( Agent
-    , bootAgent
-    , shutdownAgent
-    ) where
+  ( Agent
+  , bootAgent
+  , shutdownAgent
+  ) where
 
 import Restyled.Agent.Prelude
 
@@ -15,28 +15,52 @@ import Restyled.Agent.Redis
 import Restyled.Agent.Restyler (processPullRequestEvent)
 
 newtype Agent = Agent
-    { _unAgent :: [Thread]
-    }
+  { _unAgent :: [Thread]
+  }
 
 data Thread = Thread
-    { tLabel :: Text
-    , tThread :: Immortal.Thread
-    }
+  { tLabel :: Text
+  , tThread :: Immortal.Thread
+  }
 
 bootAgent
-    :: ( MonadUnliftIO m
-       , MonadMask m
-       , MonadLogger m
-       , MonadReader env m
-       , HasOptions env
-       , HasRedis env
-       )
-    => m Agent
+  :: ( MonadUnliftIO m
+     , MonadMask m
+     , MonadLogger m
+     , MonadReader env m
+     , HasOptions env
+     , HasRedis env
+     )
+  => m Agent
 bootAgent = do
-    size <- oRestylerPoolSize <$> view optionsL
-    Agent <$> traverse bootAgentThread [1 .. size]
+  size <- oRestylerPoolSize <$> view optionsL
+  Agent <$> traverse bootAgentThread [1 .. size]
 
 bootAgentThread
+  :: ( MonadUnliftIO m
+     , MonadMask m
+     , MonadLogger m
+     , MonadReader env m
+     , HasOptions env
+     , HasRedis env
+     )
+  => Natural
+  -> m Thread
+bootAgentThread n = withThreadContext context $ do
+  logInfo "creating"
+
+  threadContext <- extendThreadContext context <$> myThreadContext
+  thread <- Immortal.create $ \t ->
+    Immortal.onUnexpectedFinish
+      t
+      (withThreadContext threadContext . logUnexpectedFinish)
+      (withThreadContext threadContext loop)
+  pure $ Thread label thread
+ where
+  label = pack $ "restyle-" <> show n
+  context = ["thread" .= label]
+
+  loop
     :: ( MonadUnliftIO m
        , MonadMask m
        , MonadLogger m
@@ -44,57 +68,34 @@ bootAgentThread
        , HasOptions env
        , HasRedis env
        )
-    => Natural
-    -> m Thread
-bootAgentThread n = withThreadContext context $ do
-    logInfo "creating"
+    => m ()
+  loop = do
+    mEvent <- awaitWebhook
+    traverse_ processPullRequestEvent mEvent
 
-    threadContext <- extendThreadContext context <$> myThreadContext
-    thread <- Immortal.create $ \t -> Immortal.onUnexpectedFinish
-        t
-        (withThreadContext threadContext . logUnexpectedFinish)
-        (withThreadContext threadContext loop)
-    pure $ Thread label thread
-  where
-    label = pack $ "restyle-" <> show n
-    context = ["thread" .= label]
-
-    loop
-        :: ( MonadUnliftIO m
-           , MonadMask m
-           , MonadLogger m
-           , MonadReader env m
-           , HasOptions env
-           , HasRedis env
-           )
-        => m ()
-    loop = do
-        mEvent <- awaitWebhook
-        traverse_ processPullRequestEvent mEvent
-
-    logUnexpectedFinish
-        :: (MonadLogger m, Exception ex) => Either ex () -> m ()
-    logUnexpectedFinish = \case
-        Left ex ->
-            logError
-                $ "Unexpected finish"
-                :# ["exception" .= displayException ex]
-        Right () -> pure ()
+  logUnexpectedFinish
+    :: (MonadLogger m, Exception ex) => Either ex () -> m ()
+  logUnexpectedFinish = \case
+    Left ex ->
+      logError
+        $ "Unexpected finish"
+        :# ["exception" .= displayException ex]
+    Right () -> pure ()
 
 extendThreadContext :: [Pair] -> KeyMap Value -> [Pair]
 extendThreadContext ps = KeyMap.toList . KeyMap.union (KeyMap.fromList ps)
 
 shutdownAgent :: (MonadUnliftIO m, MonadLogger m) => Agent -> m ()
 shutdownAgent (Agent threads) = do
-    as <- traverse shutdownAgentThread threads
-    traverse_ wait as
+  as <- traverse shutdownAgentThread threads
+  traverse_ wait as
 
 shutdownAgentThread
-    :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
+  :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
 shutdownAgentThread Thread {..} = do
-    logInfo $ "mortalizing" :# ["thread" .= tLabel]
-    liftIO $ Immortal.mortalize tThread
+  logInfo $ "mortalizing" :# ["thread" .= tLabel]
+  liftIO $ Immortal.mortalize tThread
 
-    async $ do
-        liftIO $ Immortal.wait tThread
-        logInfo $ "done" :# ["thread" .= tLabel]
+  async $ do
+    liftIO $ Immortal.wait tThread
+    logInfo $ "done" :# ["thread" .= tLabel]
