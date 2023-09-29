@@ -48,9 +48,10 @@ library:
   dependencies:
     - Blammo
     - aeson
-    - amazonka
-    - amazonka-autoscaling
-    - amazonka-sqs
+    - amazonka >= 2.0
+    - amazonka-autoscaling >= 2.0
+    - amazonka-sqs >= 2.0
+    - amazonka-mtl
     - bytestring
     - composition-extra
     - conduit
