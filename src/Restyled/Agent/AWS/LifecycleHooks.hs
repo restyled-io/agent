@@ -6,7 +6,7 @@ module Restyled.Agent.AWS.LifecycleHooks
 
 import Restyled.Agent.Prelude
 
-import qualified Amazonka.AutoScaling.CompleteLifecycleAction as AWS
+import Amazonka.AutoScaling.CompleteLifecycleAction
 import Restyled.Agent.AWS
 import Restyled.Agent.AWS.SQS.DecodedMessage
 import Restyled.Agent.Options
@@ -36,29 +36,21 @@ data LifecycleHookDetails = LifecycleHookDetails
   }
   deriving stock (Eq, Show)
 
--- brittany-disable-next-binding
-
 instance FromJSON LifecycleHookDetails where
   parseJSON = withObject "LifecycleHookDetails" $ \o ->
     LifecycleHookDetails
-      <$> o
-      .: "LifecycleHookName"
-      <*> o
-      .: "LifecycleTransition"
-      <*> o
-      .: "AutoScalingGroupName"
-      <*> o
-      .: "EC2InstanceId"
-      <*> o
-      .: "LifecycleActionToken"
+      <$> (o .: "LifecycleHookName")
+      <*> (o .: "LifecycleTransition")
+      <*> (o .: "AutoScalingGroupName")
+      <*> (o .: "EC2InstanceId")
+      <*> (o .: "LifecycleActionToken")
 
 withPendingLifecycleHook
   :: ( MonadUnliftIO m
-     , MonadResource m
+     , MonadAWS m
      , MonadLogger m
      , MonadReader env m
      , HasOptions env
-     , HasAWS env
      )
   => Text
   -> m a
@@ -67,11 +59,10 @@ withPendingLifecycleHook = withLifecycleHook InstanceLaunching
 
 withTerminatingLifecycleHook
   :: ( MonadUnliftIO m
-     , MonadResource m
+     , MonadAWS m
      , MonadLogger m
      , MonadReader env m
      , HasOptions env
-     , HasAWS env
      )
   => Text
   -> m a
@@ -80,11 +71,10 @@ withTerminatingLifecycleHook = withLifecycleHook InstanceTerminating
 
 withLifecycleHook
   :: ( MonadUnliftIO m
-     , MonadResource m
+     , MonadAWS m
      , MonadLogger m
      , MonadReader env m
      , HasOptions env
-     , HasAWS env
      )
   => LifecycleTransition
   -> Text
@@ -120,7 +110,7 @@ data LifecycleHookActionResult
   | ActionResultAbandon
 
 completeLifecycleAction
-  :: (MonadResource m, MonadLogger m, MonadReader env m, HasAWS env)
+  :: (MonadIO m, MonadAWS m, MonadLogger m)
   => LifecycleHookDetails
   -> LifecycleHookActionResult
   -> m ()
@@ -130,16 +120,16 @@ completeLifecycleAction LifecycleHookDetails {..} action = do
     :# ["transition" .= lhdTransition, "result" .= result]
   resp <-
     send
-      $ AWS.newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
-      & (AWS.completeLifecycleAction_instanceId ?~ lhdInstanceId)
-      & ( AWS.completeLifecycleAction_lifecycleActionToken
+      $ newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
+      & (completeLifecycleAction_instanceId ?~ lhdInstanceId)
+      & ( completeLifecycleAction_lifecycleActionToken
             ?~ lhdLifecycleActionToken
         )
   logDebug
     $ "Response"
     :# [ "status"
           .= show @String
-            (resp ^. AWS.completeLifecycleActionResponse_httpStatus)
+            (resp ^. completeLifecycleActionResponse_httpStatus)
        ]
  where
   result = case action of

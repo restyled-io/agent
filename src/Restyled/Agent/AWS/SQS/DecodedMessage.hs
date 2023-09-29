@@ -7,9 +7,9 @@ module Restyled.Agent.AWS.SQS.DecodedMessage
 
 import Restyled.Agent.Prelude
 
-import qualified Amazonka.SQS.DeleteMessage as AWS
-import qualified Amazonka.SQS.ReceiveMessage as AWS
-import qualified Amazonka.SQS.Types as AWS
+import Amazonka.SQS.DeleteMessage
+import Amazonka.SQS.ReceiveMessage
+import Amazonka.SQS.Types.Message
 import Restyled.Agent.AWS
 
 data DecodedMessage a = DecodedMessage
@@ -20,10 +20,8 @@ data DecodedMessage a = DecodedMessage
 
 awaitDecodedMessage
   :: ( MonadUnliftIO m
-     , MonadResource m
+     , MonadAWS m
      , MonadLogger m
-     , MonadReader env m
-     , HasAWS env
      , FromJSON a
      , Show a
      )
@@ -56,10 +54,9 @@ awaitDecodedMessage queueUrl predicate = untilJustM $ handleAny onErr $ do
         )
 
 receiveDecodedMessage
-  :: ( MonadResource m
+  :: ( MonadIO m
+     , MonadAWS m
      , MonadLogger m
-     , MonadReader env m
-     , HasAWS env
      , FromJSON a
      )
   => Text
@@ -67,28 +64,28 @@ receiveDecodedMessage
 receiveDecodedMessage queueUrl = do
   resp <-
     send
-      $ AWS.newReceiveMessage queueUrl
-      & (AWS.receiveMessage_maxNumberOfMessages ?~ 1)
-      & (AWS.receiveMessage_waitTimeSeconds ?~ 20)
+      $ newReceiveMessage queueUrl
+      & (receiveMessage_maxNumberOfMessages ?~ 1)
+      & (receiveMessage_waitTimeSeconds ?~ 20)
   logDebug $ "Response" :# ["body" .= show @String resp]
 
   pure $ do
-    guard $ resp ^. AWS.receiveMessageResponse_httpStatus == 200
-    msgs <- resp ^. AWS.receiveMessageResponse_messages
+    guard $ resp ^. receiveMessageResponse_httpStatus == 200
+    msgs <- resp ^. receiveMessageResponse_messages
     msg <- listToMaybe msgs
-    body <- msg ^. AWS.message_body
-    recieptHandle <- msg ^. AWS.message_receiptHandle
+    body <- msg ^. message_body
+    recieptHandle <- msg ^. message_receiptHandle
     pure $ decodedMessage body recieptHandle
  where
   decodedMessage body recieptHandle =
     DecodedMessage queueUrl recieptHandle <$> eitherDecodeText body
 
 deleteDecodedMessage
-  :: (MonadResource m, MonadLogger m, MonadReader env m, HasAWS env)
+  :: (MonadIO m, MonadAWS m, MonadLogger m)
   => DecodedMessage a
   -> m ()
 deleteDecodedMessage DecodedMessage {..} = do
-  let req = AWS.newDeleteMessage dmQueueUrl dmReceiptHandle
+  let req = newDeleteMessage dmQueueUrl dmReceiptHandle
   resp <- send req
   logDebug $ "Response" :# ["body" .= show @String resp]
 

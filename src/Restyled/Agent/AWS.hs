@@ -1,53 +1,32 @@
 module Restyled.Agent.AWS
-  ( Env
-  , HasAWS (..)
-  , AWSRequest
-  , AWSResponse
+  ( module Control.Monad.AWS
   , discover
-  , send
-
-    -- * Re-export
-  , MonadResource
   ) where
 
 import Restyled.Agent.Prelude
 
-import Amazonka (AWSRequest, AWSResponse, Env)
-import qualified Amazonka as AWS
-import Conduit
-import qualified Control.Monad.Logger as Logger
+import qualified Amazonka
+import Amazonka.Env (env_logger)
+import Control.Monad.AWS
+import Control.Monad.Logger (defaultLoc, toLogStr)
 
-class HasAWS env where
-  awsEnvL :: Lens' env Env
-
-instance HasAWS Env where
-  awsEnvL = id
-
-discover :: MonadLoggerIO m => m AWS.Env
+discover :: MonadLoggerIO m => m Amazonka.Env
 discover = do
   loggerIO <- askLoggerIO
-  env <- liftIO $ AWS.newEnv AWS.discover
-  pure
-    $ env
-      { AWS.envLogger = \level msg -> do
-          loggerIO
-            Logger.defaultLoc
-            "Amazonka"
-            (fromLevel level)
-            (Logger.toLogStr msg)
-      }
 
-fromLevel :: AWS.LogLevel -> LogLevel
+  let logFn level msg = do
+        loggerIO
+          defaultLoc
+          "Amazonka"
+          (fromLevel level)
+          (toLogStr msg)
+
+  env <- liftIO $ Amazonka.newEnv Amazonka.discover
+  pure $ env & env_logger .~ logFn
+
+fromLevel :: Amazonka.LogLevel -> LogLevel
 fromLevel = \case
-  AWS.Info -> LevelInfo
-  AWS.Error -> LevelError
-  AWS.Debug -> LevelDebug
-  AWS.Trace -> LevelOther "trace"
-
-send
-  :: (MonadResource m, MonadReader env m, HasAWS env, AWSRequest a)
-  => a
-  -> m (AWSResponse a)
-send req = do
-  env <- view awsEnvL
-  AWS.send env req
+  Amazonka.Info -> LevelInfo
+  Amazonka.Error -> LevelError
+  Amazonka.Debug -> LevelDebug
+  Amazonka.Trace -> LevelOther "trace"
