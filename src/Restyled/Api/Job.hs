@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Restyled.Api.Job
   ( ApiJob (..)
   , apiJobSpec
@@ -24,8 +22,12 @@ data ApiJob = ApiJob
   deriving anyclass (FromJSON, ToJSON)
 
 apiJobSpec :: ApiJob -> Text
-apiJobSpec ApiJob {owner, repo, pullRequest} =
-  toPathPart owner <> "/" <> toPathPart repo <> "#" <> toPathPart pullRequest
+apiJobSpec job =
+  toPathPart job.owner
+    <> "/"
+    <> toPathPart job.repo
+    <> "#"
+    <> toPathPart job.pullRequest
 
 newtype ApiJobId = ApiJobId
   { unApiJobId :: Int
@@ -33,4 +35,4 @@ newtype ApiJobId = ApiJobId
   deriving newtype (FromJSON, ToJSON)
 
 apiJobIdToText :: ApiJobId -> Text
-apiJobIdToText = pack . show . unApiJobId
+apiJobIdToText = pack . show . coerce @_ @Int

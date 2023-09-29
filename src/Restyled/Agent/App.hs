@@ -18,26 +18,26 @@ import Restyled.Agent.Redis (HasRedis (..))
 import qualified Restyled.Agent.Redis as Redis
 
 data App = App
-  { appOptions :: Options
-  , appLogger :: Logger
-  , appAWS :: Amazonka.Env
-  , appRedisConn :: Redis.Connection
+  { options :: Options
+  , logger :: Logger
+  , awsEnv :: Amazonka.Env
+  , redisConn :: Redis.Connection
   }
 
 instance HasOptions App where
-  optionsL = lens appOptions $ \x y -> x {appOptions = y}
+  optionsL = lens (.options) $ \x y -> x {options = y}
 
 instance HasLogger App where
-  loggerL = lens appLogger $ \x y -> x {appLogger = y}
+  loggerL = lens (.logger) $ \x y -> x {logger = y}
 
 instance HasEnv App where
-  envL = lens appAWS $ \x y -> x {appAWS = y}
+  envL = lens (.awsEnv) $ \x y -> x {awsEnv = y}
 
 instance HasRedis App where
-  redisConnectionL = lens appRedisConn $ \x y -> x {appRedisConn = y}
+  redisConnectionL = lens (.redisConn) $ \x y -> x {redisConn = y}
 
 newtype TestAppT a = TestAppT
-  { unTestApp :: ReaderT App (LoggingT (ResourceT IO)) a
+  { _unTestApp :: ReaderT App (LoggingT (ResourceT IO)) a
   }
   deriving newtype
     ( Functor
@@ -55,17 +55,19 @@ newtype TestAppT a = TestAppT
   deriving (MonadAWS) via (ReaderAWS TestAppT)
 
 withApp :: Options -> TestAppT a -> IO a
-withApp opts@Options {..} action = do
-  logger <- newLogger oLoggerSettings
+withApp options action = do
+  logger <- newLogger options.loggerSettings
   app <-
-    App opts logger
+    App options logger
       <$> runLoggerLoggingT logger AWS.discover
-      <*> liftIO (Redis.checkedConnect oRedisConnectInfo)
+      <*> liftIO (Redis.checkedConnect options.redisConnectInfo)
 
   runResourceT
     $ runLoggerLoggingT app
     $ withThreadContext context
-    $ runReaderT (unTestApp action) app
+    $ runReaderT (coerce action) app
  where
   context =
-    ["instance" .= oInstance, "queue" .= decodeUtf8 @Text oRestyleQueue]
+    [ "instance" .= options.instanceId
+    , "queue" .= decodeUtf8 @Text options.restyleQueue
+    ]

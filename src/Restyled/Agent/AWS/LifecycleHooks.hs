@@ -28,11 +28,11 @@ instance FromJSON LifecycleTransition where
     x -> fail $ "Unexpected Transition: " <> unpack x
 
 data LifecycleHookDetails = LifecycleHookDetails
-  { lhdHookName :: Text
-  , lhdTransition :: LifecycleTransition
-  , lhdScalingGroupName :: Text
-  , lhdInstanceId :: Text
-  , lhdLifecycleActionToken :: Text
+  { hookName :: Text
+  , transition :: LifecycleTransition
+  , scalingGroupName :: Text
+  , instanceId :: Text
+  , lifecycleActionToken :: Text
   }
   deriving stock (Eq, Show)
 
@@ -81,13 +81,12 @@ withLifecycleHook
   -> m a
   -> m (Maybe a)
 withLifecycleHook transition queue act = do
-  Options {..} <- view optionsL
-
+  options <- view optionsL
   logInfo $ "Awaiting" :# ["transition" .= transition]
-  decodedMessage <- awaitDecodedMessage queue $ predicate oInstance
+  decodedMessage <- awaitDecodedMessage queue $ predicate options.instanceId
 
   let finalize action = do
-        completeLifecycleAction (dmBody decodedMessage) action
+        completeLifecycleAction decodedMessage.body action
         deleteDecodedMessage decodedMessage
 
   eResult <- tryAny act
@@ -102,8 +101,8 @@ withLifecycleHook transition queue act = do
       Nothing <$ finalize ActionResultAbandon
     Right result -> Just result <$ finalize ActionResultContinue
  where
-  predicate instanceId LifecycleHookDetails {..} =
-    lhdTransition == transition && lhdInstanceId == instanceId
+  predicate expectedInstanceId details =
+    details.transition == transition && details.instanceId == expectedInstanceId
 
 data LifecycleHookActionResult
   = ActionResultContinue
@@ -114,16 +113,16 @@ completeLifecycleAction
   => LifecycleHookDetails
   -> LifecycleHookActionResult
   -> m ()
-completeLifecycleAction LifecycleHookDetails {..} action = do
+completeLifecycleAction details action = do
   logInfo
     $ "Completing"
-    :# ["transition" .= lhdTransition, "result" .= result]
+    :# ["transition" .= details.transition, "result" .= result]
   resp <-
     send
-      $ newCompleteLifecycleAction lhdHookName lhdScalingGroupName result
-      & (completeLifecycleAction_instanceId ?~ lhdInstanceId)
+      $ newCompleteLifecycleAction details.hookName details.scalingGroupName result
+      & (completeLifecycleAction_instanceId ?~ details.instanceId)
       & ( completeLifecycleAction_lifecycleActionToken
-            ?~ lhdLifecycleActionToken
+            ?~ details.lifecycleActionToken
         )
   logDebug
     $ "Response"

@@ -1,3 +1,6 @@
+{-# LANGUAGE FieldSelectors #-}
+{-# LANGUAGE RecordWildCards #-}
+
 -- | Extends "GitHub.Data.PullRequests" 'PullRequestEvent'
 module GitHub.Data.PullRequests.Ext
   ( PullRequestEvent (..)

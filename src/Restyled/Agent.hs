@@ -19,8 +19,8 @@ newtype Agent = Agent
   }
 
 data Thread = Thread
-  { tLabel :: Text
-  , tThread :: Immortal.Thread
+  { label :: Text
+  , thread :: Immortal.Thread
   }
 
 bootAgent
@@ -33,7 +33,7 @@ bootAgent
      )
   => m Agent
 bootAgent = do
-  size <- oRestylerPoolSize <$> view optionsL
+  size <- (.restylerPoolSize) <$> view optionsL
   Agent <$> traverse bootAgentThread [1 .. size]
 
 bootAgentThread
@@ -92,10 +92,10 @@ shutdownAgent (Agent threads) = do
 
 shutdownAgentThread
   :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
-shutdownAgentThread Thread {..} = do
-  logInfo $ "mortalizing" :# ["thread" .= tLabel]
-  liftIO $ Immortal.mortalize tThread
+shutdownAgentThread thread = do
+  logInfo $ "mortalizing" :# ["thread" .= thread.label]
+  liftIO $ Immortal.mortalize thread.thread
 
   async $ do
-    liftIO $ Immortal.wait tThread
-    logInfo $ "done" :# ["thread" .= tLabel]
+    liftIO $ Immortal.wait thread.thread
+    logInfo $ "done" :# ["thread" .= thread.label]

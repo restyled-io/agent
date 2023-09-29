@@ -13,6 +13,7 @@ import Data.Functor.Syntax as X ((<$$>))
 import Data.Text as X (pack, unpack)
 import Data.Time as X (UTCTime, diffUTCTime, getCurrentTime)
 import Data.Traversable as X (for)
+import GHC.Records as X
 import Lens.Micro.Platform as X
   ( Lens'
   , lens
