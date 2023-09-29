@@ -1,3 +1,6 @@
+{-# LANGUAGE FieldSelectors #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module GitHub.Data.Installations
   ( Installation (..)
   ) where

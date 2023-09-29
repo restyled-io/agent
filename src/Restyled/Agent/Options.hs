@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Restyled.Agent.Options
   ( Options (..)
   , HasOptions (..)
@@ -12,20 +14,20 @@ import Restyled.Agent.Options.Env
 import qualified Restyled.Agent.Redis as Redis
 
 data Options = Options
-  { oGitHubAppId :: GitHub.Id GitHub.App
-  , oGitHubAppKey :: GitHub.AppKey
-  , oRestyledHost :: Text
-  , oRestyledToken :: Text
-  , oInstance :: Text
-  , oLifecycleQueueUrl :: Maybe Text
-  , oLoggerSettings :: LogSettings
-  , oNet :: Maybe Text
-  , oStatsdHost :: Maybe String
-  , oStatsdPort :: Maybe Int
-  , oRedisConnectInfo :: Redis.ConnectInfo
-  , oRestyleQueue :: ByteString
-  , oRestylerPoolSize :: Natural
-  , oShutdownTimeoutMinutes :: Natural
+  { gitHubAppId :: GitHub.Id GitHub.App
+  , gitHubAppKey :: GitHub.AppKey
+  , restyledHost :: Text
+  , restyledToken :: Text
+  , instanceId :: Text
+  , lifecycleQueueUrl :: Maybe Text
+  , loggerSettings :: LogSettings
+  , net :: Maybe Text
+  , statsdHost :: Maybe String
+  , statsdPort :: Maybe Int
+  , redisConnectInfo :: Redis.ConnectInfo
+  , restyleQueue :: ByteString
+  , restylerPoolSize :: Natural
+  , shutdownTimeoutMinutes :: Natural
   }
 
 class HasOptions env where
