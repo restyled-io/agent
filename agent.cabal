@@ -1,0 +1,141 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.2.
+--
+-- see: https://github.com/sol/hpack
+
+name:           agent
+version:        0.0.0.1
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Database.Redis.TLS
+      GitHub.Auth.JWT
+      GitHub.Data.AccessTokens
+      GitHub.Data.Apps
+      GitHub.Data.Installations
+      GitHub.Data.PullRequests.Ext
+      GitHub.Endpoints.Installations.AccessTokens
+      GitHub.Request.Preview
+      Restyled.Agent
+      Restyled.Agent.App
+      Restyled.Agent.AWS
+      Restyled.Agent.AWS.LifecycleHooks
+      Restyled.Agent.AWS.SQS.DecodedMessage
+      Restyled.Agent.GitHub
+      Restyled.Agent.Options
+      Restyled.Agent.Options.CLI
+      Restyled.Agent.Options.Env
+      Restyled.Agent.Prelude
+      Restyled.Agent.Process
+      Restyled.Agent.Queue
+      Restyled.Agent.Redis
+      Restyled.Agent.Restyler
+      Restyled.Api
+      Restyled.Api.Job
+      Restyled.Api.Repo
+  other-modules:
+      Paths_agent
+  hs-source-dirs:
+      src
+  default-extensions:
+      BangPatterns
+      DataKinds
+      DeriveAnyClass
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      LambdaCase
+      MultiParamTypeClasses
+      NoImplicitPrelude
+      NoMonomorphismRestriction
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TypeApplications
+      TypeFamilies
+  ghc-options: -fignore-optim-changes -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-exported-signatures -Wno-missing-kind-signatures -Wno-missing-import-lists -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe
+  build-depends:
+      Blammo
+    , aeson
+    , amazonka >=2.0
+    , amazonka-autoscaling >=2.0
+    , amazonka-mtl
+    , amazonka-sqs >=2.0
+    , base
+    , bytestring
+    , composition-extra
+    , conduit
+    , conduit-extra
+    , data-default-class
+    , envparse
+    , errors
+    , exceptions
+    , github
+    , hedis
+    , http-conduit
+    , http-types
+    , immortal
+    , jwt
+    , microlens-platform
+    , monad-logger
+    , optparse-applicative
+    , relude
+    , resourcet
+    , tagged
+    , text
+    , time
+    , tls
+    , typed-process
+    , unliftio
+    , unliftio-core
+  default-language: Haskell2010
+
+executable agent
+  main-is: Main.hs
+  other-modules:
+      Paths_agent
+  hs-source-dirs:
+      app
+  default-extensions:
+      BangPatterns
+      DataKinds
+      DeriveAnyClass
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      LambdaCase
+      MultiParamTypeClasses
+      NoImplicitPrelude
+      NoMonomorphismRestriction
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TypeApplications
+      TypeFamilies
+  ghc-options: -fignore-optim-changes -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-exported-signatures -Wno-missing-kind-signatures -Wno-missing-import-lists -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe
+  build-depends:
+      agent
+    , base
+  default-language: Haskell2010
