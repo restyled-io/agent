@@ -112,7 +112,7 @@ fi
 
 # https://stackoverflow.com/a/71884476
 echo "Increasing put-response-hop-limit to 2"
-aws ec2 modify-instance-metadata-options \
+aws --region "$REGION" ec2 modify-instance-metadata-options \
   --instance-id "$INSTANCE_ID" \
   --http-put-response-hop-limit 2 \
   --http-endpoint enabled
