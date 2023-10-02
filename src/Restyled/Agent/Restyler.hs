@@ -39,30 +39,33 @@ processPullRequestEvent event
         options <- view optionsL
         token <-
           getGitHubAppToken
-            options.gitHubAppId
-            options.gitHubAppKey
-            repo.installationId
+            options
+            . gitHubAppId
+              options
+            . gitHubAppKey
+              repo
+            . installationId
 
         job <- Api.createJob repo pull
 
-        withThreadContext ["job" .= job.url] $ do
+        withThreadContext ["job" .= job . url] $ do
           exitCode <-
             handleAny (exceptionHandler repo job)
               $ runRestylerImage
                 repo
                 job
                 ( mconcat
-                    [ maybe [] (\n -> ["--net", n]) options.net
+                    [ maybe [] (\n -> ["--net", n]) options . net
                     , ["--env", "GITHUB_ACCESS_TOKEN=" <> token]
                     , ["--env", "STATSD_HOST"]
                     , ["--env", "STATSD_PORT"]
-                    , concatMap (\e -> ["--env", e]) $ repo.restylerEnv
+                    , concatMap (\e -> ["--env", e]) $ repo . restylerEnv
                     ]
                 )
-                ["--job-url", job.url, apiJobSpec job]
+                ["--job-url", job . url, apiJobSpec job]
 
           logInfo $ "Job complete" :# ["exitCode" .= exitCodeInt exitCode]
-          void $ Api.completeJob job.id exitCode
+          void $ Api.completeJob job . id exitCode
  where
   owner = simpleOwnerLogin $ repoOwner $ pullRequestRepository event
   name = repoName $ pullRequestRepository event
@@ -135,15 +138,15 @@ runRestylerImage repo job dockerArgs restylerArgs = do
       $ mconcat
         [ ["run", "--rm"]
         , ["--label", "restyler"]
-        , ["--label", "job-id=" <> apiJobIdToText job.id]
+        , ["--label", "job-id=" <> apiJobIdToText job . id]
         , ["--log-driver=awslogs"]
         , ["--log-opt", "awslogs-region=us-east-1"]
-        , ["--log-opt", "awslogs-group=" <> job.awsLogGroup]
-        , ["--log-opt", "awslogs-stream=" <> job.awsLogStream]
+        , ["--log-opt", "awslogs-group=" <> job . awsLogGroup]
+        , ["--log-opt", "awslogs-stream=" <> job . awsLogStream]
         , ["--volume", "/tmp:/tmp"]
         , ["--volume", "/var/run/docker.sock:/var/run/docker.sock"]
         , dockerArgs
-        , [repo.restylerImage]
+        , [repo . restylerImage]
         , restylerArgs
         ]
 

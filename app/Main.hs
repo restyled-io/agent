@@ -13,13 +13,13 @@ main :: IO ()
 main = do
   options <- parseOptions
   withApp options $ do
-    case options.lifecycleQueueUrl of
+    case options . lifecycleQueueUrl of
       Nothing -> do
         void bootAgent
         logInfo "No Lifecycle Hook queue, running forever"
         forever $ threadDelay maxBound
       Just queue -> do
-        let m = options.shutdownTimeoutMinutes
+        let m = options . shutdownTimeoutMinutes
         mAgent <- withPendingLifecycleHook queue bootAgent
         mmResult <- for mAgent $ \agent -> do
           withTerminatingLifecycleHook queue $ do

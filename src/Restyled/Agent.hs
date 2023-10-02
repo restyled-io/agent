@@ -33,7 +33,7 @@ bootAgent
      )
   => m Agent
 bootAgent = do
-  size <- (.restylerPoolSize) <$> view optionsL
+  size <- (. restylerPoolSize) <$> view optionsL
   Agent <$> traverse bootAgentThread [1 .. size]
 
 bootAgentThread
@@ -93,9 +93,9 @@ shutdownAgent (Agent threads) = do
 shutdownAgentThread
   :: (MonadUnliftIO m, MonadLogger m) => Thread -> m (Async ())
 shutdownAgentThread thread = do
-  logInfo $ "mortalizing" :# ["thread" .= thread.label]
-  liftIO $ Immortal.mortalize thread.thread
+  logInfo $ "mortalizing" :# ["thread" .= thread . label]
+  liftIO $ Immortal.mortalize thread . thread
 
   async $ do
-    liftIO $ Immortal.wait thread.thread
-    logInfo $ "done" :# ["thread" .= thread.label]
+    liftIO $ Immortal.wait thread . thread
+    logInfo $ "done" :# ["thread" .= thread . label]

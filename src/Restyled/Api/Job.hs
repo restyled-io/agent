@@ -23,11 +23,14 @@ data ApiJob = ApiJob
 
 apiJobSpec :: ApiJob -> Text
 apiJobSpec job =
-  toPathPart job.owner
+  toPathPart job
+    . owner
     <> "/"
-    <> toPathPart job.repo
+    <> toPathPart job
+    . repo
     <> "#"
-    <> toPathPart job.pullRequest
+    <> toPathPart job
+    . pullRequest
 
 newtype ApiJobId = ApiJobId
   { unApiJobId :: Int

@@ -83,10 +83,10 @@ withLifecycleHook
 withLifecycleHook transition queue act = do
   options <- view optionsL
   logInfo $ "Awaiting" :# ["transition" .= transition]
-  decodedMessage <- awaitDecodedMessage queue $ predicate options.instanceId
+  decodedMessage <- awaitDecodedMessage queue $ predicate options . instanceId
 
   let finalize action = do
-        completeLifecycleAction decodedMessage.body action
+        completeLifecycleAction decodedMessage . body action
         deleteDecodedMessage decodedMessage
 
   eResult <- tryAny act
@@ -102,7 +102,7 @@ withLifecycleHook transition queue act = do
     Right result -> Just result <$ finalize ActionResultContinue
  where
   predicate expectedInstanceId details =
-    details.transition == transition && details.instanceId == expectedInstanceId
+    details . transition == transition && details . instanceId == expectedInstanceId
 
 data LifecycleHookActionResult
   = ActionResultContinue
@@ -116,13 +116,16 @@ completeLifecycleAction
 completeLifecycleAction details action = do
   logInfo
     $ "Completing"
-    :# ["transition" .= details.transition, "result" .= result]
+    :# ["transition" .= details . transition, "result" .= result]
   resp <-
     send
-      $ newCompleteLifecycleAction details.hookName details.scalingGroupName result
-      & (completeLifecycleAction_instanceId ?~ details.instanceId)
+      $ newCompleteLifecycleAction details
+      . hookName details
+      . scalingGroupName result
+      & (completeLifecycleAction_instanceId ?~ details . instanceId)
       & ( completeLifecycleAction_lifecycleActionToken
-            ?~ details.lifecycleActionToken
+            ?~ details
+            . lifecycleActionToken
         )
   logDebug
     $ "Response"
