@@ -17,7 +17,7 @@ awaitWebhook
      )
   => m (Maybe a)
 awaitWebhook = do
-  queueName <- (.restyleQueue) <$> view optionsL
+  queueName <- views optionsL (.restyleQueue)
   eresult <- runRedis $ brpop [queueName] webhookTimeout
 
   case over _2 eitherDecodeStrict <$$> eresult of
