@@ -32,7 +32,7 @@ import UnliftIO.Concurrent as X (threadDelay)
 import UnliftIO.Exception as X (handleAny, throwIO, tryAny)
 import UnliftIO.Temporary as X (withSystemTempFile)
 
-views :: MonadReader a m => Lens' a b -> (b -> c) -> m c
+views :: MonadReader s m => Lens' s a -> (a -> r) -> m r
 views l f = f <$> view l
 
 eitherDecodeText :: FromJSON a => Text -> Either String a
