@@ -1,5 +1,6 @@
 module Restyled.Agent.Prelude
   ( module X
+  , views
   , eitherDecodeText
   , exitCodeInt
   ) where
@@ -30,6 +31,9 @@ import UnliftIO.Async as X (Async, async, race, wait)
 import UnliftIO.Concurrent as X (threadDelay)
 import UnliftIO.Exception as X (handleAny, throwIO, tryAny)
 import UnliftIO.Temporary as X (withSystemTempFile)
+
+views :: MonadReader a m => Lens' a b -> (b -> c) -> m c
+views l f = f <$> view l
 
 eitherDecodeText :: FromJSON a => Text -> Either String a
 eitherDecodeText = eitherDecode . fromStrict . encodeUtf8

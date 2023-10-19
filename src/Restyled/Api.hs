@@ -109,8 +109,9 @@ restyledRequest
   -> m Request
 restyledRequest method path = do
   options <- view optionsL
-  req <- liftIO $ parseRequest $ method <> " " <> unpack options.host <> path
-  pure $ addAuthorization options.token $ setRequestCheckStatus req
+  req <-
+    liftIO $ parseRequest $ method <> " " <> unpack options.restyledHost <> path
+  pure $ addAuthorization options.restyledToken $ setRequestCheckStatus req
  where
   addAuthorization :: Text -> Request -> Request
   addAuthorization token =
