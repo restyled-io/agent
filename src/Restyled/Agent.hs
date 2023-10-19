@@ -33,7 +33,7 @@ bootAgent
      )
   => m Agent
 bootAgent = do
-  size <- (.restylerPoolSize) <$> view optionsL
+  size <- views optionsL (.restylerPoolSize)
   Agent <$> traverse bootAgentThread [1 .. size]
 
 bootAgentThread
