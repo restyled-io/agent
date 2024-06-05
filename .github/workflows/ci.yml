@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: stack
-        uses: freckle/stack-action@v4
+        uses: freckle/stack-action@v5
       - uses: freckle/weeder-action@v2
         with:
           ghc-version: ${{ steps.stack.outputs.compiler-version }}
@@ -24,14 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: haskell/actions/hlint-setup@v2
-      - uses: haskell/actions/hlint-run@v2
+      - uses: haskell-actions/hlint-setup@v2
+      - uses: haskell-actions/hlint-run@v2
         with:
           fail-on: warning
 
   image:
     runs-on: ubuntu-latest
     steps:
+      # TODO: docker/metadata-action
       - id: prep
         run: |
           image=restyled/agent:$(echo "${{ github.sha }}" | head -c7)
@@ -42,38 +43,26 @@ jobs:
             tags=$image
           fi
 
-          echo "::set-output name=image::${image}"
-          echo "::set-output name=tags::${tags}"
+          {
+            echo "image=${image}"
+            echo "tags=${tags}"
+          } >>"$GITHUB_OUTPUT"
 
-      - id: buildx
-        uses: docker/setup-buildx-action@v1
+      - uses: docker/setup-buildx-action@v3
 
-      - uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-image-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-image-
-
-      - uses: docker/login-action@v1
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - uses: docker/build-push-action@v2
+      - uses: docker/build-push-action@v5
         with:
-          builder: ${{ steps.buildx.outputs.name }}
           build-args: |
             REVISION=${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           push: true
           tags: ${{ steps.prep.outputs.tags }}
-
-      # Avoids ever-growing cache hitting limits
-      - run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     outputs:
       image: ${{ steps.prep.outputs.image }}
@@ -95,7 +84,7 @@ jobs:
           key=src/restyle-machines/user-data/${{ github.sha }}
           m4 -D AGENT_IMAGE="$agent_image" < user-data.in |
             aws s3 cp --acl public-read - "s3://infra.restyled.io/$key"
-          echo "::set-output name=key::$key"
+          echo "key=$key" >>"$GITHUB_OUTPUT"
 
     outputs:
       key: ${{ steps.artifact.outputs.key }}
