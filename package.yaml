@@ -27,6 +27,7 @@ default-extensions:
   - DeriveLift
   - DeriveTraversable
   - DerivingStrategies
+  - DuplicateRecordFields
   - FlexibleContexts
   - FlexibleInstances
   - GADTs
