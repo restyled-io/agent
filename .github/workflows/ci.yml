@@ -46,7 +46,7 @@ jobs:
           {
             echo "image=${image}"
             echo "tags=${tags}"
-          } >>"$GITHUB_INPUT"
+          } >>"$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -84,7 +84,7 @@ jobs:
           key=src/restyle-machines/user-data/${{ github.sha }}
           m4 -D AGENT_IMAGE="$agent_image" < user-data.in |
             aws s3 cp --acl public-read - "s3://infra.restyled.io/$key"
-          echo "key=$key" >>"$GITHUB_INPUT"
+          echo "key=$key" >>"$GITHUB_OUTPUT"
 
     outputs:
       key: ${{ steps.artifact.outputs.key }}
